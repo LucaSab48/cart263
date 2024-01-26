@@ -51,32 +51,6 @@ function setup() {
 }
 
 
-function handleResult() {
-    let spoke = recognition.resultString;
-    if(recognition.resultValue) {
-        console.log(spoke);
-    }
-
-    switch(spoke) {
-        case ('pink'):
-            bg1 = 255;
-            bg2 = 16;
-            bg3 = 240;
-        break;
-        case ("red"):
-            bg1 = 255;
-            bg2 = 10;
-            bg3 = 50;
-        break;
-        case ("purple"):
-            bg1 = 230;
-            bg2 = 230;
-            bg3 = 250;
-        break;
-    }
-}
-
-
 function createAnimals() {
     for (let i = 0; i < NUM_ANIMALS; i++) {
         let animal = createRandomAnimals();
@@ -128,5 +102,31 @@ function mousePressed() {
     if (sausageDog.found) {
         let play = random(winningMessage);
         computerVoice.speak(play);
+    }
+}
+
+
+function handleResult() {
+    let spoke = recognition.resultString;
+    if(recognition.resultValue) {
+        console.log(spoke);
+    }
+
+    switch(spoke) {
+        case 'pink':
+            bg1 = 255;
+            bg2 = 16;
+            bg3 = 200;
+        break;
+        case "red":
+            bg1 = 255;
+            bg2 = 10;
+            bg3 = 50;
+        break;
+        case "purple":
+            bg1 = 230;
+            bg2 = 200;
+            bg3 = 255;
+        break;
     }
 }
