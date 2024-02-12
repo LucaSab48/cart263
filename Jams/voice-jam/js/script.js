@@ -49,18 +49,31 @@ let robotAntenna = {
     height: 50, 
     size: 30, 
     fill: 180, 
-}
+};
 
 let insultList;
-let recognition = new p5.SpeechRec();
-let computerVoice = new p5.Speech();
 let speaking = 'speak to me';
-// let ending = ["duh", "ding dong", "ding-a-ling", "duh duh duh", "doy", "stupid", "says the knucklehead McSpazatron", "says the doofus", "stink face", "duh-doy", "hahaha", "fart"];
-// let quips = ["if i had arms i'd give you a swirly", "give me your lunch money", "did you just blow in from stupid town", "you sound like a muppet"];
-// let insults = ["if your eyes were any further apart, you'd be an herbivore", "you are the human equivalency of Internet Explorer", "you have a face for radio", "yo mama's so fat she wakes up in sections", "you remind me of C code, no class"];
+let numLine = 1;
+
+const recognition = new p5.SpeechRec();
+const computerVoice = new p5.Speech();
+const commands = [
+    {
+        "command": ["shut up", "shut your mouth", "stop talking", "shush", "shut it"],
+        "callback": shutUpResponse
+    },
+    {
+        "command": ["how are you", "how is it going", "how's it going", "how are you feeling", "how do you feel", "how's the weather", "what's up", "what is up", "how's your day going", "how is your day going"],
+        "callback": howResponse
+    },
+    {
+        "command": ["who are you", "who made you", "what are you", "why are you like this", "what's your story", "why are you so mean", "why do you do this"],
+        "callback": originStory
+    }
+];
 
 function preload() {
-    insultList = loadJSON("assets/data/insults.json")
+    insultList = loadJSON("assets/data/insults.json");
 }
 
 
@@ -135,32 +148,91 @@ function robotDone() {
 
 function handleResult() {
     let spoke = recognition.resultString.toLowerCase();
-    let interruption = random(1,5);
+    let interruption = Math.round(random(0,5));
     
     if(recognition.resultValue) { 
-        if(spoke.startsWith("i'm ") || spoke.startsWith("i am ")) {
-            let newSentence = spoke.slice(spoke.indexOf(" ") + 1);
-            computerVoice.speak("hello " + newSentence + ", i am your computer bully");
-            speaking = "hello " + newSentence + ", i am your computer bully";
-            console.log(spoke.indexOf(" ") + 1);
+        for(let command of commands) {
+            for(let i = 0; i < command.command.length; i++) {
+                if(spoke === command.command[i]){
+                    command.callback();
+                    break;
+                }
+            }
         }
-        else if(spoke.startsWith("your ") || spoke.startsWith("you're ") || spoke.startsWith("you are ") || spoke.startsWith("you ")) {
+        if(spoke.startsWith("i'm ")) {
+            let newSentence = spoke.slice(spoke.indexOf("i'm ") + 3);
+            computerVoice.speak("hello" + newSentence + ", i am your computer bully");
+            speaking = "hello" + newSentence + ", i am your computer bully";
+        }
+        else if(spoke.startsWith("i am ")) {
+            let newSentence2 = spoke.slice(spoke.indexOf("i am ") + 4);
+            computerVoice.speak("hello" + newSentence2 + ", i am your computer bully");
+            speaking = "hello" + newSentence2 + ", i am your computer bully";
+        }
+        else if(spoke.startsWith("you are ")) {
+            let comeback = spoke.slice(spoke.indexOf(" ") + 4);
+            computerVoice.speak("yo mama " + comeback);
+            speaking = "yo mama " + comeback;
+        }
+        else if(spoke.startsWith("your ") || spoke.startsWith("you're ") || spoke.startsWith("you ")) {
             let comeback = spoke.slice(spoke.indexOf(" ") + 1);
             computerVoice.speak("yo mama " + comeback);
             speaking = "yo mama " + comeback;
         }
-        else if(interruption > 4) {
+        else if(spoke.startsWith("why ")) {
+            let chosenInsult = random(insultList.jokes);
+            computerVoice.speak("because " + chosenInsult);
+            speaking = "because " + chosenInsult;
+        }
+        else if(interruption == 4) {
             let chosenQuip = random(insultList.quips);
             computerVoice.speak(chosenQuip);
             speaking = chosenQuip;
         }
         else {
             let chosenEnding = random(insultList.ending);
-            console.log(spoke);
             console.log(interruption);
             computerVoice.speak(spoke + ", " + chosenEnding);
             speaking = spoke + ", " + chosenEnding;
         }
+        console.log(spoke);
+    }
+}
+
+
+function shutUpResponse() {
+    let chosenResponse = random(insultList.response);
+    computerVoice.speak(chosenResponse);
+    speaking = chosenResponse;
+}
+
+
+function howResponse() {
+    let chosenFeeling = random(insultList.feelings);
+    computerVoice.speak(chosenFeeling);
+    speaking = chosenFeeling;
+}
+
+
+function originStory() {
+    numLine = 1;
+    if(numLine == 1) {
+        let line1 = random(insultList.beginning);
+        computerVoice.speak(line1);
+        speaking = line1;
+        numLine = 2;
+    }
+    else if(numLine == 2) {
+        let line2 = random(insultList.middle);
+        computerVoice.speak(line2);
+        speaking = line2;
+        numLine = 3;
+    }
+    else if(numLine == 3) {
+        let line3 = random(insultList.end);
+        computerVoice.speak(line3);
+        speaking = line3;
+        numLine = 0;
     }
 }
 
