@@ -66,6 +66,7 @@ let storyState = 1; //This is to continue the robots origin story
 //Constants that will remain the same
 const recognition = new p5.SpeechRec(); //Contains the speech recognizer 
 const computerVoice = new p5.Speech(); //Contains voice synthesizer 
+const model_url = "https://github.com/marl/crepe/tree/master/crepe";
 //This constant contains a variety of commands that will initialize a function called a callback
 const commands = [
     {
@@ -88,7 +89,7 @@ let emotionScore = 0;
 let audioContext;
 let mic;
 let pitch;
-let frequency1;
+let frequency1 = 0;
 
 
 //This function preloads the JSON file and assigns it to the insultList variable
@@ -119,7 +120,8 @@ function setup() {
 
 
 function pitchOn() {
-    pitch = ml5.pitchDetection('./model/', audioContext , mic.stream, modelIsOn);
+    console.log("pitch on!");
+    pitch = ml5.pitchDetection(model_url, audioContext , mic.stream, modelIsOn);
 }
 
 
@@ -214,7 +216,7 @@ function handleResult() {
         speaking = happyResponse;
         return;
     }
-    else if(prediction.score > 0.9) {
+    else if(prediction.score > 0.95) {
         computerVoice.speak("you are happy");
         speaking = "you are happy";
         return;
@@ -327,14 +329,22 @@ function modelLoaded() {
 
 
 function modelIsOn() {
-    measurePitch();
+    console.log("model on!");
+    pitch.getPitch(measurePitch);
 }
 
 
-function measurePitch() {
-    pitch.getPitch(function(err, frequency) {
+function measurePitch(error, frequency) {
+    if(error) {
+        console.error(error);
+    }
+    else {
         console.log(frequency);
-    });
+        if(frequency) {
+            frequency1 = frequency;
+        }
+        pitch.getPitch(measurePitch);
+    }
 }
 
 
