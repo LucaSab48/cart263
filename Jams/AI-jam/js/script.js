@@ -57,8 +57,10 @@ let robotAntenna = {
     size: 30, 
     fill: 180, 
 };
-
+//https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/
 //Global variables that change 
+let state = "loading";
+let ready = false;
 let insultList; //This will hold the JSON file
 let speaking = 'speak to me'; //This contains the string that the text displays
 let storyState = 1; //This is to continue the robots origin story
@@ -66,7 +68,7 @@ let storyState = 1; //This is to continue the robots origin story
 //Constants that will remain the same
 const recognition = new p5.SpeechRec(); //Contains the speech recognizer 
 const computerVoice = new p5.Speech(); //Contains voice synthesizer 
-const model_url = "https://github.com/marl/crepe/tree/master/crepe";
+// const model_url = "https://github.com/marl/crepe/tree/gh-pages/model";
 //This constant contains a variety of commands that will initialize a function called a callback
 const commands = [
     {
@@ -90,11 +92,13 @@ let audioContext;
 let mic;
 let pitch;
 let frequency1 = 0;
+let modelCrepe;
 
 
 //This function preloads the JSON file and assigns it to the insultList variable
 function preload() {
     insultList = loadJSON("assets/data/insults.json");
+    modelCrepe = loadJSON("assets/data/CREPE/model.json");
 }
 
 
@@ -121,17 +125,29 @@ function setup() {
 
 function pitchOn() {
     console.log("pitch on!");
-    pitch = ml5.pitchDetection(model_url, audioContext , mic.stream, modelIsOn);
+    pitch = ml5.pitchDetection(modelCrepe, audioContext , mic.stream, modelIsOn);
 }
 
 
 //This function displays the robot head and changes the text displayed
 function draw() {
-    background(220, 208, 255); //Sets color of the background
-    textDisplay(); //Display text function
-    displayRobot(); //Display robot function
-    emotionPercentage();
-    frequencyAmount();
+    if(state === "loading") {
+        background(255)
+        textAlign(CENTER, CENTER);
+        textSize(50);
+        text("Loading models", width/2, height/2);
+    }
+    else if(state === "robotReady") {
+        background(220, 208, 255); //Sets color of the background
+        textDisplay(); //Display text function
+        displayRobot(); //Display robot function
+        emotionPercentage();
+        frequencyAmount();
+    }
+    else if(state === "robotBeat") {
+
+    }
+
 }
 
 
@@ -325,12 +341,17 @@ function originStory() {
 
 function modelLoaded() {
     console.log("Model Loaded");
+    ready = true;
+
 }
 
 
 function modelIsOn() {
     console.log("model on!");
     pitch.getPitch(measurePitch);
+    if(ready) {
+        state = "robotReady";
+    }
 }
 
 
