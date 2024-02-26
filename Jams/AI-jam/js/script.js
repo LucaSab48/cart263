@@ -57,7 +57,7 @@ let robotAntenna = {
     size: 30, 
     fill: 180, 
 };
-//https://cdn.jsdelivr.net/gh/ml5js/ml5-data-and-models/models/pitch-detection/crepe/
+
 //Global variables that change 
 let state = "loading";
 let ready = false;
@@ -68,7 +68,6 @@ let storyState = 1; //This is to continue the robots origin story
 //Constants that will remain the same
 const recognition = new p5.SpeechRec(); //Contains the speech recognizer 
 const computerVoice = new p5.Speech(); //Contains voice synthesizer 
-// const model_url = "https://github.com/marl/crepe/tree/gh-pages/model";
 //This constant contains a variety of commands that will initialize a function called a callback
 const commands = [
     {
@@ -87,18 +86,12 @@ const commands = [
 
 let emotion;
 let emotionScore = 0;
-
-let audioContext;
-let mic;
-let pitch;
-let frequency1 = 0;
-let modelCrepe;
+let robotHealth = 3;
 
 
 //This function preloads the JSON file and assigns it to the insultList variable
 function preload() {
     insultList = loadJSON("assets/data/insults.json");
-    modelCrepe = loadJSON("assets/data/CREPE/model.json");
 }
 
 
@@ -115,17 +108,6 @@ function setup() {
     computerVoice.onEnd = robotDone; //When voice ends, calls robotDone function
     
     emotion = ml5.sentiment('movieReviews', modelLoaded);
-
-    audioContext = getAudioContext();
-    mic = new p5.AudioIn();
-    mic.start(pitchOn);
-
-}
-
-
-function pitchOn() {
-    console.log("pitch on!");
-    pitch = ml5.pitchDetection(modelCrepe, audioContext , mic.stream, modelIsOn);
 }
 
 
@@ -133,7 +115,7 @@ function pitchOn() {
 function draw() {
     if(state === "loading") {
         background(255)
-        textAlign(CENTER, CENTER);
+        textAlign(CENTER);
         textSize(50);
         text("Loading models", width/2, height/2);
     }
@@ -142,10 +124,11 @@ function draw() {
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
         emotionPercentage();
-        frequencyAmount();
+        robotHealthDisplay();
+        checkIfDefeated();
     }
     else if(state === "robotBeat") {
-
+        winningDisplayMessage();
     }
 
 }
@@ -168,11 +151,25 @@ function emotionPercentage() {
 }
 
 
-function frequencyAmount() {
+function robotHealthDisplay() {
+    let robotHealthDrawn = 1;
+    let x = 400;
+    while(robotHealthDrawn <= robotHealth) {
+        fill(255, 10, 50);
+        ellipse(x, 650, 50);
+        x = x + 100;
+        robotHealthDrawn += 1;
+    }
+}
+
+
+function winningDisplayMessage() {
+    background(0);
+    fill(255);
     textAlign(CENTER);
-    textSize(30);
-    fill(0);
-    text("Pitch: " + frequency1, 500, 650);
+    textSize(50);
+    text("You defeated the evil robot!", width/2, height/2);
+    computerVoice.stop();
 }
 
 
@@ -226,15 +223,19 @@ function handleResult() {
     
     console.log(prediction.score);
 
-    if(prediction.score < 0.1) {
+    if(prediction.score > 0.95) {
         let happyResponse = random(insultList.happy);
         computerVoice.speak(happyResponse);
         speaking = happyResponse;
+        robotHealth += -1;
         return;
     }
-    else if(prediction.score > 0.95) {
-        computerVoice.speak("you are happy");
-        speaking = "you are happy";
+    else if(prediction.score < 0.05) {
+        computerVoice.speak("you are sad");
+        speaking = "you are sad";
+        if(robotHealth < 3) {
+            robotHealth += 1;
+        }
         return;
     }
 
@@ -341,30 +342,13 @@ function originStory() {
 
 function modelLoaded() {
     console.log("Model Loaded");
-    ready = true;
-
+    state = "robotReady";
 }
 
 
-function modelIsOn() {
-    console.log("model on!");
-    pitch.getPitch(measurePitch);
-    if(ready) {
-        state = "robotReady";
-    }
-}
-
-
-function measurePitch(error, frequency) {
-    if(error) {
-        console.error(error);
-    }
-    else {
-        console.log(frequency);
-        if(frequency) {
-            frequency1 = frequency;
-        }
-        pitch.getPitch(measurePitch);
+function checkIfDefeated() {
+    if(robotHealth === 0) {
+        state = "robotBeat";
     }
 }
 
