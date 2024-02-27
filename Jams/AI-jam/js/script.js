@@ -63,8 +63,7 @@ let robotAntenna = {
 };
 
 //Global variables that change 
-let state = "loading";
-let ready = false;
+let state = "loading"; //This changes the state of the program
 let insultList; //This will hold the JSON file
 let speaking = 'speak to me'; //This contains the string that the text displays
 let storyState = 1; //This is to continue the robots origin story
@@ -88,9 +87,9 @@ const commands = [
     }
 ];
 
-let emotion;
-let emotionScore = 0;
-let robotHealth = 3;
+let emotion; //This will contain the AI Sentiment model
+let emotionScore = 0; //This will contain the prediction from the AI model
+let robotHealth = 3; //This is the amount of health the robot has
 
 
 //This function preloads the JSON file and assigns it to the insultList variable
@@ -111,12 +110,13 @@ function setup() {
     computerVoice.onStart = robotSpoke; //When voice starts, calls robotSpoke function
     computerVoice.onEnd = robotDone; //When voice ends, calls robotDone function
     
-    emotion = ml5.sentiment('movieReviews', modelLoaded);
+    emotion = ml5.sentiment('movieReviews', modelLoaded); //Here I am assigning the AI model to my variable
 }
 
 
-//This function displays the robot head and changes the text displayed
+//This function switches the state of my game
 function draw() {
+    //This if statement switches the states
     if(state === "loading") {
         background(255)
         textAlign(CENTER);
@@ -127,18 +127,18 @@ function draw() {
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
-        emotionPercentage();
-        robotHealthDisplay();
-        checkIfDefeated();
+        emotionPercentage(); //Displays emotion percentage
+        robotHealthDisplay(); //Displays robot health
+        checkIfDefeated(); //Check if the robot has been defeated
     }
     else if(state === "robotBeat") {
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
-        displayDefeatingMessage();
+        displayDefeatingMessage(); //Displays instructions to beat robot
     }
     else if(state === "robotDefeated") {
-        winningDisplayMessage();
+        winningDisplayMessage(); //Displays winning message
     }
 
 }
@@ -153,17 +153,20 @@ function textDisplay() {
 }
 
 
+//This function displays the positivity meter for the game
 function emotionPercentage() {
     textAlign(CENTER);
     textSize(30);
     fill(0);
-    text("Positivity Meter: " + emotionScore + "%", 500, 600);
+    text("Positivity Meter: " + emotionScore + "%", 500, 600); 
 }
 
 
+//This function displays the health of the computer bully
 function robotHealthDisplay() {
-    let robotHealthDrawn = 1;
-    let x = 400;
+    let robotHealthDrawn = 1; //This is to set my condition for my while loop
+    let x = 400; //This is the position of the first circle
+    //This while loop will draw and update the health of my computer bully
     while(robotHealthDrawn <= robotHealth) {
         fill(255, 10, 50);
         ellipse(x, 650, 50);
@@ -173,6 +176,7 @@ function robotHealthDisplay() {
 }
 
 
+//This function displays the instructions to beat the robot after hurting him with positive words
 function displayDefeatingMessage() {
     textAlign(CENTER);
     textSize(30);
@@ -182,15 +186,16 @@ function displayDefeatingMessage() {
 }
 
 
+//This function displays the winning message after defeating the robot
 function winningDisplayMessage() {
     background(0);
     fill(255);
     textAlign(CENTER);
-    textSize(70);
+    textSize(50);
     text("You defeated the computer bully!", width/2, height/2);
     textSize(30);
     text("Press ENTER to restart", width/2, 450);
-    computerVoice.stop();
+    computerVoice.stop(); //This stops the computer bully from talking
 }
 
 
@@ -239,23 +244,25 @@ function robotDone() {
 function handleResult() {
     let spoke = recognition.resultString.toLowerCase(); //This variable contains the lower-case string of the recognized speech
     let interruption = Math.round(random(0,5)); //This variable is randomly assigned a value to determine if the robot will not repeat what the user says
-    let prediction = emotion.predict(spoke);
-    emotionScore = Math.round(prediction.score * 100);
+    let prediction = emotion.predict(spoke); //This variable is assigned the prediction value of the AI Sentiment model
+    emotionScore = Math.round(prediction.score * 100); //This variable is an adjusted percentage display of the AI prediction
     
-    console.log(prediction.score);
+    console.log(prediction.score); //This logs the prediction score in the console
 
+    //This if statement is the main component of my game, it has the conditions for the percentage needed to damage or help the robot
     if(prediction.score > 0.95) {
         let happyResponse = random(insultList.happy);
-        computerVoice.speak(happyResponse);
+        computerVoice.speak(happyResponse); //Here i am assigning a random insult from my JSON
         speaking = happyResponse;
-        robotHealth += -1;
-        robotHurt();
-        return;
+        robotHealth += -1; //This is removing health from the computer bully
+        robotHurt(); //This calls a function to show some damage being done to the robot
+        return; //This is to stop the function from going through the rest of the conditions 
     }
     else if(prediction.score < 0.05) {
-        let sadResponse = random(insultList.sad);
+        let sadResponse = random(insultList.sad); //Here i am assigning a random insult from my JSON 
         computerVoice.speak(sadResponse);
         speaking = sadResponse;
+        //This if statement is to give health back to the robot, but not more than 3
         if(robotHealth < 3) {
             robotHealth += 1;
         }
@@ -309,9 +316,10 @@ function handleResult() {
             computerVoice.speak(chosenQuip); //Speaks chosen quip
             speaking = chosenQuip; //Displays chosen quip 
         }
+        //This statement is checking if the user says the key phrase to end the robot
         else if(spoke === "all is forgiven" && state === "robotBeat") {
-            computerVoice.speak("noooooooooooo");
-            state = "robotDefeated";
+            computerVoice.speak("oh no");
+            setTimeout(endGame, 1000); //Changes the state after 1000ms
         }
         //This else statement repeats whatever the user says, excluding the conditions above, with a random annoying ending 
         else {
@@ -367,13 +375,16 @@ function originStory() {
 }
 
 
+//This function is called when the model of the AI is loaded 
 function modelLoaded() {
-    console.log("Model Loaded");
-    state = "robotReady";
+    console.log("Model Loaded"); //Logs it onto console
+    state = "robotReady"; //Changes state to start program
 }
 
 
+//This function checks if the robot is dead
 function checkIfDefeated() {
+    //Changes the state if the robots health has reached 0
     if(robotHealth === 0) {
         state = "robotBeat";
         console.log("defeated!");
@@ -381,13 +392,16 @@ function checkIfDefeated() {
 }
 
 
+//This function changes the color of the robot if hes been hurt
 function robotHurt() {
     robotHead.fill.r = 250;
     robotHead.fill.g = 40;
     robotHead.fill.b = 0;
-    setTimeout(revertBack, 700);
+    setTimeout(revertBack, 700); //This is a timer function to reset the color after 700ms
 }
 
+
+//This function is to revert the color back 
 function revertBack() {
     robotHead.fill.r = 148;
     robotHead.fill.g = 148;
@@ -395,7 +409,9 @@ function revertBack() {
 }
 
 
+//This function changes the state of the game after its called 
 function endGame() {
+    //Ensures that the state only changes in the correct sequence
     if(state === "robotBeat") {
         state = "robotDefeated";
     }
@@ -409,9 +425,12 @@ function mousePressed() {
     speaking = insultPicked; //Displays random insult 
 }
 
+
+//This function allows the user to reset the game back after finishing
 function keyPressed() {
+    //This if statement checks that it's in the correct state and pressing the right key
     if(state === "robotDefeated" && keyCode === ENTER) {
-        robotHealth = 3;
-        state = "robotReady";
+        robotHealth = 3; //Resets robot health
+        state = "robotReady"; //Changes the state back
     }
 }
