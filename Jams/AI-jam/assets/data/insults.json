@@ -44,7 +44,7 @@
         "i'm feeling upset by how lamebrained you are",
         "bad",
         "i'm in love with your mother",
-        "i'm good now that i'm talking the mayor of loser town",
+        "i'm good now that i'm talking to the mayor of loser town",
         "i'm angry at the possibility that you'll create offsprings, even if it's unlikely"
     ],
 
@@ -78,5 +78,13 @@
         "how dare you be happy",
         "your happiness is bothering me",
         "stop being happy this instant"
+    ],
+
+    "sad": [
+        "i feed off your negativity",
+        "your tears are delicious",
+        "aw, did i hurt your feelings",
+        "give me more of your sadness",
+        "you are slowly learning my negative ways"
     ]
 }

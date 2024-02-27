@@ -14,7 +14,11 @@ let robotHead = {
     y: 300,
     width: 500,
     height: 400,
-    fill: 180 
+    fill: {
+        r: 148,
+        g: 148,
+        b: 148
+    } 
 };
 
 //Object that contains characteristics of the robot mouth
@@ -128,6 +132,12 @@ function draw() {
         checkIfDefeated();
     }
     else if(state === "robotBeat") {
+        background(220, 208, 255); //Sets color of the background
+        textDisplay(); //Display text function
+        displayRobot(); //Display robot function
+        displayDefeatingMessage();
+    }
+    else if(state === "robotDefeated") {
         winningDisplayMessage();
     }
 
@@ -147,7 +157,7 @@ function emotionPercentage() {
     textAlign(CENTER);
     textSize(30);
     fill(0);
-    text("Happy Meter: " + emotionScore + "%", 500, 600);
+    text("Positivity Meter: " + emotionScore + "%", 500, 600);
 }
 
 
@@ -163,12 +173,23 @@ function robotHealthDisplay() {
 }
 
 
+function displayDefeatingMessage() {
+    textAlign(CENTER);
+    textSize(30);
+    fill(0);
+    text("Forgive the robot to defeat him", 500, 600);
+    text("Say: all is forgiven", 500, 650)
+}
+
+
 function winningDisplayMessage() {
     background(0);
     fill(255);
     textAlign(CENTER);
-    textSize(50);
-    text("You defeated the evil robot!", width/2, height/2);
+    textSize(70);
+    text("You defeated the computer bully!", width/2, height/2);
+    textSize(30);
+    text("Press ENTER to restart", width/2, 450);
     computerVoice.stop();
 }
 
@@ -181,7 +202,7 @@ function displayRobot() {
     
     noStroke();
     rectMode(CENTER);
-    fill(robotHead.fill);
+    fill(robotHead.fill.r, robotHead.fill.g, robotHead.fill.b);
     rect(robotHead.x, robotHead.y, robotHead.width, robotHead.height); //Creates robot head
     rect(robotAntenna.x, robotAntenna.y, robotAntenna.width, robotAntenna.height); //Creates robot antenna 
     fill(robotMouth.fill.r, robotMouth.fill.g, robotMouth.fill.b); //Allows fill to change 
@@ -192,7 +213,7 @@ function displayRobot() {
     fill(robotPupils.fill);
     ellipse(x1, y1, robotPupils.size); //Creates left pupil
     ellipse(x2, y1, robotPupils.size); //Creates right pupil
-    fill(robotAntenna.fill);
+    fill(robotHead.fill.r, robotHead.fill.g, robotHead.fill.b);
     ellipse(robotAntenna.x, robotAntenna.y - 35, robotAntenna.size); //Creates circle on top of antenna
 }
 
@@ -228,11 +249,13 @@ function handleResult() {
         computerVoice.speak(happyResponse);
         speaking = happyResponse;
         robotHealth += -1;
+        robotHurt();
         return;
     }
     else if(prediction.score < 0.05) {
-        computerVoice.speak("you are sad");
-        speaking = "you are sad";
+        let sadResponse = random(insultList.sad);
+        computerVoice.speak(sadResponse);
+        speaking = sadResponse;
         if(robotHealth < 3) {
             robotHealth += 1;
         }
@@ -281,10 +304,14 @@ function handleResult() {
             speaking = "because " + chosenInsult; //Displays spoken insult 
         }
         //This if loop only initiates if the randomly assigned interruption value is 4
-        else if(interruption == 4) {
+        else if(interruption == 4 && state === "robotReady") {
             let chosenQuip = random(insultList.quips); //Randomly assigns a string from the JSON file to the chosenQuip variable 
             computerVoice.speak(chosenQuip); //Speaks chosen quip
             speaking = chosenQuip; //Displays chosen quip 
+        }
+        else if(spoke === "all is forgiven" && state === "robotBeat") {
+            computerVoice.speak("noooooooooooo");
+            state = "robotDefeated";
         }
         //This else statement repeats whatever the user says, excluding the conditions above, with a random annoying ending 
         else {
@@ -349,6 +376,28 @@ function modelLoaded() {
 function checkIfDefeated() {
     if(robotHealth === 0) {
         state = "robotBeat";
+        console.log("defeated!");
+    }
+}
+
+
+function robotHurt() {
+    robotHead.fill.r = 250;
+    robotHead.fill.g = 40;
+    robotHead.fill.b = 0;
+    setTimeout(revertBack, 700);
+}
+
+function revertBack() {
+    robotHead.fill.r = 148;
+    robotHead.fill.g = 148;
+    robotHead.fill.b = 148;
+}
+
+
+function endGame() {
+    if(state === "robotBeat") {
+        state = "robotDefeated";
     }
 }
 
@@ -358,4 +407,11 @@ function mousePressed() {
     let insultPicked = random(insultList.jokes); //Randomly picks an insult and assigns to a variable 
     computerVoice.speak(insultPicked); //Speaks random insult 
     speaking = insultPicked; //Displays random insult 
+}
+
+function keyPressed() {
+    if(state === "robotDefeated" && keyCode === ENTER) {
+        robotHealth = 3;
+        state = "robotReady";
+    }
 }
