@@ -10,7 +10,8 @@ class Boot extends Phaser.Scene {
         this.load.image('backdrop', 'assets/images/platformer-backdrop.png');
         this.load.image('cannon_head', 'assets/images/cannon_head.png');
         this.load.image('cannon_body', 'assets/images/cannon_body.png');
-        this.load.image('platform', 'assets/images/platform1.png');
+        this.load.image('platform', 'assets/images/platform.png');
+        this.load.image('house', 'assets/images/house1.png');
         this.load.spritesheet('chick', 'assets/images/chick.png', { frameWidth: 16, frameHeight: 18, endFrame: 3 });
         this.load.on('complete', () => {
             this.scene.start('play');
