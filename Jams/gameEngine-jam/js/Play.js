@@ -9,8 +9,9 @@ class Play extends Phaser.Scene {
 
     platforms;
     score = 0;
-    catGroup;
+    chickGroup = [];
     scoreText;
+    cursors;
 
     create ()
     {
@@ -18,10 +19,10 @@ class Play extends Phaser.Scene {
 
         this.add.image(400, 300, 'backdrop').setScale(2.5);
 
-        this.catGroup = this.physics.add.group();
+        this.chickGroup = this.physics.add.group();
 
-        let cannonHead = this.add.image(130, 450, 'cannon_head').setDepth(0);
-        let cannon = this.add.image(130, 500, 'cannon_body').setDepth(0);
+        let cannonHead = this.add.image(130, 450, 'cannon_head').setDepth(1);
+        let cannon = this.add.image(130, 500, 'cannon_body').setDepth(1);
 
 
 
@@ -38,7 +39,7 @@ class Play extends Phaser.Scene {
         this.platforms.create(50, 250, 'platform');
         this.platforms.create(750, 220, 'platform');
 
-        this.house = this.add.sprite(750, 350,'house').setDepth(1).setScale(0.2)
+        this.house = this.physics.add.sprite(750, 100,'house').setScale(0.2);
 
         this.scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
 
@@ -50,7 +51,7 @@ class Play extends Phaser.Scene {
         });
 
         this.input.on('pointerup', () => {
-            let chick = this.createCat(cannon.x, cannon.y - 50);
+            let chick = this.makeChick(cannon.x, cannon.y - 50);
             chick.play('fly');
             this.physics.velocityFromRotation(angle, this.speed, chick.body.velocity);
             chick.body.setCollideWorldBounds(true);
@@ -58,19 +59,22 @@ class Play extends Phaser.Scene {
             this.physics.add.collider(chick, this.platforms);
         });
 
+        this.cursors = this.input.keyboard.createCursorKeys();
+
         this.physics.world.setBounds(0, 0, 800, 600);
-        this.physics.add.overlap(this.catGroup, this.house, this.goneHome, null, this);
+        this.physics.add.collider(this.house, this.platforms);
+        this.physics.add.overlap(this.chickGroup.getChildren(), this.house, this.goneHome, null, this);
 
     }
 
     
-    createCat(x, y) {
+    makeChick(x, y) {
         let chick = this.physics.add.sprite(x, y, 'chick')
                         .setScale(2)
                         .setCollideWorldBounds(true)
                         .setBounce(1, 1);
 
-        this.catGroup.add(chick);
+        this.chickGroup.add(chick);
 
         return chick;
     }
@@ -82,13 +86,28 @@ class Play extends Phaser.Scene {
             return;
         }
 
+        if (this.cursors.up.isDown)
+        {
+            if(this.speed < 1000 && this.long < 300) {
+                this.speed += 10;
+                this.long += 5;
+            }
+        }
+        else if (this.cursors.down.isDown)
+        {
+            if(this.speed > 20 && this.long > 50) {
+                this.speed += -10;
+                this.long += -5;
+            }
+        }
+
     }
 
-    goneHome(chick) {
-        chick.disableBody(true, true);
+    goneHome(chick, house) {
+        chick.destroy();
 
         //  Add and update the score
-        this.score += 10;
+        this.score += 1;
         this.scoreText.setText(`Score: ${this.score}`);
 
 
