@@ -9,7 +9,8 @@ let config = {
     physics: {
         default: "arcade",
         arcade: {
-            gravity: {y: 300}
+            gravity: {y: 350},
+            debug: false
         }
     },
     scene: [Boot, Play]
