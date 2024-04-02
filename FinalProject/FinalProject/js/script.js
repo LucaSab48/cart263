@@ -464,9 +464,8 @@ function revertBack() {
   
 //Displays the webcam.
 function running() {
-    //Display video feed
-    const flippedVideo = ml5.flipImage(video);
-    image(flippedVideo, 0, 0, width, height);
+    //Display black background
+    background(0);
   
     //Check if there currently predictions to display
     if (predictions.length > 0) {
@@ -483,7 +482,9 @@ function running() {
       //Display the pin
       displayPin();
     }
-  
+    
+    computerVoice.stop();
+
     //Handle the bubble's movement and display
     moveBubble();
     checkOutOfBounds();
@@ -516,7 +517,7 @@ function moveBubble() {
 
 //Resets the bubble if it moves off 
 function checkOutOfBounds() {
-    if (bubble < 0) {
+    if (bubble.y < 0) {
       resetBubble();
     }
 }
