@@ -8,6 +8,10 @@ author, and this description to match your project!
 
 "use strict";
 
+let isOn = false;
+let countDown = 60000;
+let startTime;
+let timerSeconds;
 let video;
 let poseNet;
 let pose;
@@ -17,18 +21,25 @@ let lineColor = {
   g: 255, 
   b: 255
 };
-let circle1 = {
+let robotBully = {
   x: 300,
   y: 100,
-  width: 100,
-  height: 100,
-  isTouching: false,
-  img: undefined
+  width: 120,
+  height: 120,
+  speed: 5,
+  vx: 0, 
+  vy: 0,
+  jitter: 0.05,
+  isHit: false,
+  health: 400,
+  img: undefined,
+  img2: undefined
 }
 
 
 function preload() {
-  circle1.img = loadImage("assets/images/robotBully1.png");
+  robotBully.img = loadImage("assets/images/robotBully2.png");
+  robotBully.img2 = loadImage("assets/images/robotBullyDamaged1.png");
 }
 
 
@@ -39,6 +50,7 @@ function setup() {
   poseNet = ml5.poseNet(video, loading);
   poseNet.on('pose', running);
 
+
 }
 
 
@@ -48,6 +60,7 @@ function running(poses) {
     pose = poses[0].pose;
     skeleton = poses[0].skeleton;
   }
+  isOn = true;
 }
 
 
@@ -62,11 +75,20 @@ function loading() {
 
 
 function draw() {
-  image(video, 0, 0);
-  drawCircle1();
+  translate(width, 0);
+  scale(-1, 1);
+  image(video, 0, 0, width, height);
+  
+  if(isOn) {
+    enemyMovement();
+    healthBar(robotBully.health, 320, 460);
+    displayCountdown();
+  }
 
   if (pose) {
-    let d = dist(pose.leftWrist.x, pose.leftWrist.y, circle1.x, circle1.y);
+    let d1 = dist(pose.leftWrist.x, pose.leftWrist.y, robotBully.x, robotBully.y);
+    let d2 = dist(pose.rightWrist.x, pose.rightWrist.y, robotBully.x, robotBully.y);
+
     for (let i = 0; i < pose.keypoints.length; i++) {
       let x = pose.keypoints[i].position.x;
       let y = pose.keypoints[i].position.y;
@@ -77,27 +99,86 @@ function draw() {
     for (let i = 0; i < skeleton.length; i++) {
       let a = skeleton[i][0];
       let b = skeleton[i][1];
-      strokeWeight(2);
+      strokeWeight(3);
       stroke(lineColor.r, lineColor.g, lineColor.b);
       line(a.position.x, a.position.y, b.position.x, b.position.y);
     }
 
-    if(d < circle1.height) {
+    if(d1 < robotBully.height) {
       lineColor.r = 0;
       lineColor.g = 255;
       lineColor.b = 0;
+      damagedRobot();
+    }
+    else if(d2 < robotBully.height) {
+      lineColor.r = 0;
+      lineColor.g = 255;
+      lineColor.b = 0;
+      damagedRobot();
     }
     else {
       lineColor.r = 255;
       lineColor.g = 255;
       lineColor.b = 255;
+      drawRobotBully();
     }
   }
 }
 
 
-function drawCircle1() {
-  image(circle1.img, circle1.x, circle1.y, circle1.width, circle1.height);
+function drawRobotBully() {
+  push();
+  imageMode(CENTER);
+  image(robotBully.img, robotBully.x, robotBully.y, robotBully.width, robotBully.height);
+  pop();
+}
+
+
+function damagedRobot() {
+  push();
+  imageMode(CENTER);
+  image(robotBully.img2, robotBully.x, robotBully.y, robotBully.width, robotBully.height);
+  pop();
+  robotBully.health += -0.2;
+}
+
+
+function enemyMovement() {
+  let r = random(0, 1);
+  if(r < robotBully.jitter) {
+    robotBully.vx = random(-robotBully.speed, robotBully.speed);
+    robotBully.vy = random(-robotBully.speed, robotBully.speed);
+  }
+
+  robotBully.x += robotBully.vx;
+  robotBully.y += robotBully.vy;
+  robotBully.x = constrain(robotBully.x, 0, 640);
+  robotBully.y = constrain(robotBully.y, 0, 480);
+}
+
+
+function healthBar(health, x, y) {
+  push();
+  noStroke();
+  fill(0);
+  rectMode(CENTER, CENTER);
+  rect(x, y, 400, 30);
+  fill(255, 0, 0);
+  rect(x, y, health, 30);
+  pop();
+}
+
+
+function displayCountdown() {
+  startTime = millis();
+  push();
+  translate(width, 0);
+  scale(-1, 1);
+  textSize(32);
+  textStyle(BOLD);
+  textAlign(CENTER, CENTER);
+  text(Math.round((countDown - startTime) / 1000), 600, 50);
+  pop();
 }
 
 
