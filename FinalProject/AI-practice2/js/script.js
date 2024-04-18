@@ -11,7 +11,6 @@ author, and this description to match your project!
 let isOn = false;
 let countDown = 60000;
 let startTime;
-let timerSeconds;
 let video;
 let poseNet;
 let pose;
@@ -30,7 +29,6 @@ let robotBully = {
   vx: 0, 
   vy: 0,
   jitter: 0.05,
-  isHit: false,
   health: 400,
   img: undefined,
   img2: undefined
@@ -49,8 +47,6 @@ function setup() {
   video.hide();
   poseNet = ml5.poseNet(video, loading);
   poseNet.on('pose', running);
-
-
 }
 
 
@@ -74,27 +70,21 @@ function loading() {
 }
 
 
-function draw() {
+function poseNetGame() {
   translate(width, 0);
   scale(-1, 1);
   image(video, 0, 0, width, height);
-  
-  if(isOn) {
-    enemyMovement();
-    healthBar(robotBully.health, 320, 460);
-    displayCountdown();
-  }
 
   if (pose) {
     let d1 = dist(pose.leftWrist.x, pose.leftWrist.y, robotBully.x, robotBully.y);
     let d2 = dist(pose.rightWrist.x, pose.rightWrist.y, robotBully.x, robotBully.y);
 
-    for (let i = 0; i < pose.keypoints.length; i++) {
-      let x = pose.keypoints[i].position.x;
-      let y = pose.keypoints[i].position.y;
-      fill(255, 0, 0);
-      ellipse(x, y, 16, 16);
-    }
+    // for (let i = 0; i < pose.keypoints.length; i++) {
+    //   let x = pose.keypoints[i].position.x;
+    //   let y = pose.keypoints[i].position.y;
+    //   fill(255, 0, 0);
+    //   ellipse(x, y, 16, 16);
+    // }
 
     for (let i = 0; i < skeleton.length; i++) {
       let a = skeleton[i][0];
@@ -122,6 +112,12 @@ function draw() {
       lineColor.b = 255;
       drawRobotBully();
     }
+  }  
+  
+  if(isOn) {
+    enemyMovement();
+    healthBar(robotBully.health, 320, 460);
+    displayCountdown();
   }
 }
 
@@ -139,7 +135,7 @@ function damagedRobot() {
   imageMode(CENTER);
   image(robotBully.img2, robotBully.x, robotBully.y, robotBully.width, robotBully.height);
   pop();
-  robotBully.health += -0.2;
+  robotBully.health += -0.5;
 }
 
 
@@ -174,10 +170,12 @@ function displayCountdown() {
   push();
   translate(width, 0);
   scale(-1, 1);
+  noStroke();
+  fill(255, 0, 0);
   textSize(32);
   textStyle(BOLD);
   textAlign(CENTER, CENTER);
-  text(Math.round((countDown - startTime) / 1000), 600, 50);
+  text(Math.round((countDown - startTime) / 1000), 580, 30);
   pop();
 }
 

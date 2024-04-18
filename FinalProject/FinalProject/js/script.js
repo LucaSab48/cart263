@@ -93,32 +93,40 @@ let robotHealth = 3; //This is the amount of health the robot has
 
 //User video
 let video;
-//Name of model
-let modelName = `Handpose`;
-//Handpose object
-let handpose;
-//Set of predictions made by Handpose
-let predictions = [];
-
-//Bubble object
-let bubble;
-//Pin object
-let pin = {
-  tip: {
-    x: undefined,
-    y: undefined
-  },
-  head: {
-    x: undefined,
-    y: undefined,
-    size: 20
-  }
+let isOn = false;
+let countDown = 60000;
+let startTime;
+let starting = false;
+let savedTime;
+let poseNet;
+let pose;
+let skeleton;
+let lineColor = {
+  r: 255,
+  g: 255, 
+  b: 255
 };
+let robotBully = {
+  x: 300,
+  y: 100,
+  width: 120,
+  height: 120,
+  speed: 5,
+  vx: 0, 
+  vy: 0,
+  jitter: 0.05,
+  health: 400,
+  img: undefined,
+  img2: undefined
+}
+
 
 
 //This function preloads the JSON file and assigns it to the insultList variable
 function preload() {
     insultList = loadJSON("assets/data/insults.json");
+    robotBully.img = loadImage("assets/images/robotBully2.png");
+    robotBully.img2 = loadImage("assets/images/robotBullyDamaged1.png");
 }
 
 
@@ -136,31 +144,10 @@ function setup() {
     
     emotion = ml5.sentiment('movieReviews', modelLoaded); //Here I am assigning the AI model to my variable
 
-    //Start webcam and hide the resulting HTML element
     video = createCapture(VIDEO);
     video.hide();
-
-    //Start the Handpose model and switch to my running state when it loads
-    handpose = ml5.handpose(video, {
-        flipHorizontal: true
-    }, function() {
-        //Switch state to running
-        state = `robotReady`;
-    });
-
-    //Listen for prediction events from Handpose and store the results in my predictions array when they occur
-    handpose.on(`predict`, function(results) {
-        predictions = results;
-    });
-
-    //Create bubble
-    bubble = {
-        x: random(width),
-        y: height,
-        size: 100,
-        vx: 0,
-        vy: -2
-    }
+    poseNet = ml5.poseNet(video, loading);
+    poseNet.on('pose', running);
 }
 
 
@@ -182,9 +169,12 @@ function draw() {
         checkIfDefeated(); //Check if the robot has been defeated
     }
     else if(state === "running") {
-        running(); //Start handpose game
+        resizeCanvas(640, 480);
+        poseNetGame();
+        checkIfDead();
     }
     else if(state === "robotBeat") {
+        resizeCanvas(640, 480);
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
@@ -257,6 +247,7 @@ function displayRobot() {
     let x1 = map(mouseX, 0, width, 385, 415); //Maps the mouseX to the x position of the left pupil
     let x2 = map(mouseX, 0, width, 585, 615); //Maps the mouseX to the x position of the right pupil
     let y1 = map(mouseY, 0, height, 175, 225); //Maps the mouseY to the y position of both pupils
+    
     
     noStroke();
     rectMode(CENTER);
@@ -440,7 +431,6 @@ function checkIfDefeated() {
     //Changes the state if the robots health has reached 0
     if(robotHealth === 0) {
         state = "running";
-        console.log("Handpose");
     }
 }
 
@@ -461,93 +451,146 @@ function revertBack() {
     robotHead.fill.b = 148;
 }
 
+
+function running(poses) {
+    console.log(poses);
+    if(poses.length > 0) {
+      pose = poses[0].pose;
+      skeleton = poses[0].skeleton;
+    }
+    isOn = true;
+}
+
+
+function loading() {
+    push();
+    textSize(32);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text(`Loading PoseNet`, width / 2, height / 2);
+    pop();
+}
+
+
+function poseNetGame() {
+    translate(width, 0);
+    scale(-1, 1);
+    image(video, 0, 0, width, height);
+
+    if(!starting) {
+        savedTime = millis()
+    }
   
-//Displays the webcam.
-function running() {
-    //Display black background
-    background(0);
+    if (pose) {
+      let d1 = dist(pose.leftWrist.x, pose.leftWrist.y, robotBully.x, robotBully.y);
+      let d2 = dist(pose.rightWrist.x, pose.rightWrist.y, robotBully.x, robotBully.y);
   
-    //Check if there currently predictions to display
-    if (predictions.length > 0) {
-      //Get the positions of the tip and base of the index finger
-      updatePin(predictions[0]);
+      // for (let i = 0; i < pose.keypoints.length; i++) {
+      //   let x = pose.keypoints[i].position.x;
+      //   let y = pose.keypoints[i].position.y;
+      //   fill(255, 0, 0);
+      //   ellipse(x, y, 16, 16);
+      // }
   
-      //Check if the tip of the pin is touching the bubble
-      let d = dist(pin.tip.x, pin.tip.y, bubble.x, bubble.y);
-      if (d < bubble.size / 2) {
-        //Pops bubble
-        resetBubble();
-        state = "robotBeat";
+      for (let i = 0; i < skeleton.length; i++) {
+        let a = skeleton[i][0];
+        let b = skeleton[i][1];
+        strokeWeight(3);
+        stroke(lineColor.r, lineColor.g, lineColor.b);
+        line(a.position.x, a.position.y, b.position.x, b.position.y);
       }
-      //Display the pin
-      displayPin();
-    }
+  
+      if(d1 < robotBully.height) {
+        lineColor.r = 0;
+        lineColor.g = 255;
+        lineColor.b = 0;
+        damagedRobot();
+      }
+      else if(d2 < robotBully.height) {
+        lineColor.r = 0;
+        lineColor.g = 255;
+        lineColor.b = 0;
+        damagedRobot();
+      }
+      else {
+        lineColor.r = 255;
+        lineColor.g = 255;
+        lineColor.b = 255;
+        drawRobotBully();
+      }
+    }  
     
-    computerVoice.stop();
-
-    //Handle the bubble's movement and display
-    moveBubble();
-    checkOutOfBounds();
-    displayBubble();
-}
-  
-
-//Updates the position of the pin according to the latest prediction
-function updatePin(prediction) {
-    pin.tip.x = prediction.annotations.indexFinger[3][0];
-    pin.tip.y = prediction.annotations.indexFinger[3][1];
-    pin.head.x = prediction.annotations.indexFinger[0][0];
-    pin.head.y = prediction.annotations.indexFinger[0][1];
-}
-
-
-//Resets the bubble to the bottom of the screen
-function resetBubble() {
-    bubble.x = random(width);
-    bubble.y = height;
-}
-
-  
-///Moves the bubble according to its velocity
-function moveBubble() {
-    bubble.x += bubble.vx;
-    bubble.y += bubble.vy;
-}
-  
-
-//Resets the bubble if it moves off 
-function checkOutOfBounds() {
-    if (bubble.y < 0) {
-      resetBubble();
+    if(isOn && state == "running") {
+      starting = true;
+      startTime = millis() - savedTime;
+      enemyMovement();
+      healthBar(robotBully.health, 320, 460);
+      displayCountdown();
     }
 }
-  
-  
-//Displays the bubble as a circle
-function displayBubble() {
+
+
+function drawRobotBully() {
     push();
-    noStroke();
-    fill(100, 100, 200, 150);
-    ellipse(bubble.x, bubble.y, bubble.size);
+    imageMode(CENTER);
+    image(robotBully.img, robotBully.x, robotBully.y, robotBully.width, robotBully.height);
     pop();
 }
   
- 
-//Displays the pin based on the tip and base coordinates. Draws a line between them and adds a red pinhead.
-function displayPin() {
-    //Draw pin
-    push();
-    stroke(255);
-    strokeWeight(2);
-    line(pin.tip.x, pin.tip.y, pin.head.x, pin.head.y);
-    pop();
   
-    //Draw pinhead
+function damagedRobot() {
     push();
-    fill(255, 0, 0);
-    noStroke();
-    ellipse(pin.head.x, pin.head.y, pin.head.size);
+    imageMode(CENTER);
+    image(robotBully.img2, robotBully.x, robotBully.y, robotBully.width, robotBully.height);
     pop();
+    robotBully.health += -0.5;
+}
+  
+  
+function enemyMovement() {
+    let r = random(0, 1);
+    if(r < robotBully.jitter) {
+      robotBully.vx = random(-robotBully.speed, robotBully.speed);
+      robotBully.vy = random(-robotBully.speed, robotBully.speed);
+    }
+  
+    robotBully.x += robotBully.vx;
+    robotBully.y += robotBully.vy;
+    robotBully.x = constrain(robotBully.x, 0, 640);
+    robotBully.y = constrain(robotBully.y, 0, 480);
+}
+  
+  
+function healthBar(health, x, y) {
+    push();
+    noStroke();
+    fill(0);
+    rectMode(CENTER, CENTER);
+    rect(x, y, 400, 30);
+    fill(255, 0, 0);
+    rect(x, y, health, 30);
+    pop();
+}
+  
+  
+function displayCountdown() {
+    push();
+    translate(width, 0);
+    scale(-1, 1);
+    noStroke();
+    fill(255, 0, 0);
+    textSize(32);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text(Math.round((countDown - startTime) / 1000), 580, 30);
+    pop();
+}
+
+
+function checkIfDead() {
+    if(robotBully.health <= 0) {
+        state = "robotBeat"
+    }
 }
 
 
