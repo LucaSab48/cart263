@@ -82,7 +82,7 @@ const commands = [
         "callback": howResponse
     },
     {
-        "command": ["who are you", "who made you", "what are you", "why are you like this", "what's your story", "why are you so mean", "why do you do this"],
+        "command": ["who are you", "who made you", "what are you", "why are you like this", "what's your story", "why are you so mean", "why do you do this", "then what", "what happened", "then what happened", "what happened after that", "next"],
         "callback": originStory
     }
 ];
@@ -101,6 +101,7 @@ let savedTime;
 let poseNet;
 let pose;
 let skeleton;
+let meter = 0;
 let lineColor = {
   r: 255,
   g: 255, 
@@ -114,11 +115,33 @@ let robotBully = {
   speed: 5,
   vx: 0, 
   vy: 0,
-  jitter: 0.05,
+  jitter: 0.08,
   health: 400,
+  damage: 0.5,
   img: undefined,
   img2: undefined
 }
+
+let forgiveButton = {
+    x: 300, 
+    y: 500,
+    size: 150,  
+    width: 100, 
+    height: 100,
+    alpha: 255, 
+    img: undefined
+};
+
+let killButton = {
+    x: 700, 
+    y: 500,
+    size: 150,  
+    width: 100, 
+    height: 100,
+    alpha: 255, 
+    img: undefined
+};
+
 
 
 
@@ -127,6 +150,8 @@ function preload() {
     insultList = loadJSON("assets/data/insults.json");
     robotBully.img = loadImage("assets/images/robotBully2.png");
     robotBully.img2 = loadImage("assets/images/robotBullyDamaged1.png");
+    forgiveButton.img = loadImage("assets/images/forgiveSymbol1.png");
+    killButton.img = loadImage("assets/images/deathSymbol1.png");
 }
 
 
@@ -164,17 +189,33 @@ function draw() {
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
+       
+    }
+    else if(state === "weak") {
+        background(220, 208, 255); //Sets color of the background
+        textDisplay(); //Display text function
+        displayRobot(); //Display robot function
         emotionPercentage(); //Displays emotion percentage
         robotHealthDisplay(); //Displays robot health
         checkIfDefeated(); //Check if the robot has been defeated
     }
+    else if(state === "decision"){
+        background(220, 208, 255);
+        buttonSelection();
+    }
     else if(state === "running") {
         resizeCanvas(640, 480);
+        background(255);
         poseNetGame();
         checkIfDead();
     }
-    else if(state === "robotBeat") {
+    else if(state === "running2") {
         resizeCanvas(640, 480);
+        poseNetGame2();
+        checkIfCorrupted();
+    }
+    else if(state === "robotBeat") {
+        resizeCanvas(1000, 700);
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
@@ -210,11 +251,14 @@ function robotHealthDisplay() {
     let robotHealthDrawn = 1; //This is to set my condition for my while loop
     let x = 400; //This is the position of the first circle
     //This while loop will draw and update the health of my computer bully
-    while(robotHealthDrawn <= robotHealth) {
-        fill(255, 10, 50);
-        ellipse(x, 650, 50);
-        x = x + 100;
-        robotHealthDrawn += 1;
+    
+    if(state === "weak") {
+        while(robotHealthDrawn <= robotHealth) {
+            fill(255, 10, 50);
+            ellipse(x, 650, 50);
+            x = x + 100;
+            robotHealthDrawn += 1;
+        }
     }
 }
 
@@ -294,7 +338,7 @@ function handleResult() {
     console.log(prediction.score); //This logs the prediction score in the console
 
     //This if statement is the main component of my game, it has the conditions for the percentage needed to damage or help the robot
-    if(prediction.score > 0.95) {
+    if(prediction.score > 0.95 && state === "weak") {
         let happyResponse = random(insultList.happy);
         computerVoice.speak(happyResponse); //Here i am assigning a random insult from my JSON
         speaking = happyResponse;
@@ -302,7 +346,7 @@ function handleResult() {
         robotHurt(); //This calls a function to show some damage being done to the robot
         return; //This is to stop the function from going through the rest of the conditions 
     }
-    else if(prediction.score < 0.05) {
+    else if(prediction.score < 0.05 && state === "weak") {
         let sadResponse = random(insultList.sad); //Here i am assigning a random insult from my JSON 
         computerVoice.speak(sadResponse);
         speaking = sadResponse;
@@ -413,7 +457,7 @@ function originStory() {
             let line3 = random(insultList.end); //Randomly picks an ending to the story 
             computerVoice.speak(line3);
             speaking = line3;
-            storyState = 1; //Resets the story state to make a new story 
+            state = "weak"; //Resets the story state to make a new story 
             break;  
     }
 }
@@ -429,8 +473,8 @@ function modelLoaded() {
 //This function checks if the robot is dead
 function checkIfDefeated() {
     //Changes the state if the robots health has reached 0
-    if(robotHealth === 0) {
-        state = "running";
+    if(robotHealth === 0 && state === "weak") {
+        state = "decision";
     }
 }
 
@@ -449,6 +493,48 @@ function revertBack() {
     robotHead.fill.r = 148;
     robotHead.fill.g = 148;
     robotHead.fill.b = 148;
+}
+
+
+function buttonSelection() {
+    let d1 = dist(mouseX, mouseY, forgiveButton.x, forgiveButton.y);
+    let d2 = dist(mouseX, mouseY, killButton.x, killButton.y);
+
+    if(d1 < forgiveButton.size / 2 && state === "decision") {
+        forgiveButton.alpha = 100;
+    }
+    else if(d2 < killButton.size / 2 && state === "decision") {
+        killButton.alpha = 100;
+    }
+    else {
+        forgiveButton.alpha = 255;
+        killButton.alpha = 255;
+    }
+    
+    push();
+    fill(255, 0, 0, forgiveButton.alpha);
+    ellipse(forgiveButton.x, forgiveButton.y, forgiveButton.size);
+    fill(255, 0, 0, killButton.alpha);
+    ellipse(killButton.x, killButton.y, killButton.size);
+    pop();
+
+    push();
+    imageMode(CENTER);
+    image(forgiveButton.img, forgiveButton.x, forgiveButton.y, forgiveButton.width, forgiveButton.height);
+    image(killButton.img, killButton.x, killButton.y, killButton.width, killButton.height);
+    pop(); 
+    
+    push();
+    fill(0);
+    textAlign(CENTER);
+    textSize(50);
+    text("THE COMPUTER BULLY IS TRYING", width/2, 200);
+    text("TO ENTER THE REAL WORLD", width/2, 250);
+    textSize(30);
+    text("Pick between killing or forgiving the robot", width/2, 310);
+    pop();
+
+    computerVoice.stop();
 }
 
 
@@ -473,6 +559,7 @@ function loading() {
 
 
 function poseNetGame() {
+    computerVoice.stop();
     translate(width, 0);
     scale(-1, 1);
     image(video, 0, 0, width, height);
@@ -530,6 +617,96 @@ function poseNetGame() {
 }
 
 
+function poseNetGame2() {
+    computerVoice.stop();
+    translate(width, 0);
+    scale(-1, 1);
+    image(video, 0, 0, width, height);
+  
+    meter = constrain(meter, 0, 400);
+  
+    if (pose) {
+      let d1 = dist(pose.leftShoulder.x, pose.leftShoulder.y, robotBully.x, robotBully.y);
+      let d2 = dist(pose.rightShoulder.x, pose.rightShoulder.y, robotBully.x, robotBully.y);
+      let d3 = dist(pose.rightKnee.x, pose.rightKnee.y, robotBully.x, robotBully.y);
+      let d4 = dist(pose.leftKnee.x, pose.leftKnee.y, robotBully.x, robotBully.y);
+      let d5 = dist(pose.nose.x, pose.nose.y, robotBully.x, robotBully.y);
+      let d6 = dist(pose.rightHip.x, pose.rightHip.y, robotBully.x, robotBully.y);
+      let d7 = dist(pose.leftHip.x, pose.leftHip.y, robotBully.x, robotBully.y);
+  
+    //   for (let i = 0; i < pose.keypoints.length; i++) {
+    //     let x = pose.keypoints[i].position.x;
+    //     let y = pose.keypoints[i].position.y;
+    //     fill(255, 0, 0);
+    //     ellipse(x, y, 16, 16);
+    //   }
+  
+      for (let i = 0; i < skeleton.length; i++) {
+        let a = skeleton[i][0];
+        let b = skeleton[i][1];
+        strokeWeight(3);
+        stroke(lineColor.r, lineColor.g, lineColor.b);
+        line(a.position.x, a.position.y, b.position.x, b.position.y);
+      }
+  
+      if(d1 < robotBully.height) {
+        lineColor.r = 255;
+        lineColor.g = 0;
+        lineColor.b = 0;
+        meter += robotBully.damage;
+      }
+      else if(d2 < robotBully.height) {
+        lineColor.r = 255;
+        lineColor.g = 0;
+        lineColor.b = 0;
+        meter += robotBully.damage;
+      }
+      else if(d3 < robotBully.height) {
+        lineColor.r = 255;
+        lineColor.g = 0;
+        lineColor.b = 0;
+        meter += robotBully.damage;
+      }
+      else if(d4 < robotBully.height) {
+        lineColor.r = 255;
+        lineColor.g = 0;
+        lineColor.b = 0;
+        meter += robotBully.damage;
+      }
+      else if(d5 < robotBully.height) {
+        lineColor.r = 255;
+        lineColor.g = 0;
+        lineColor.b = 0;
+        meter += robotBully.damage;
+      }
+      else if(d6 < robotBully.height) {
+        lineColor.r = 255;
+        lineColor.g = 0;
+        lineColor.b = 0;
+        meter += robotBully.damage;
+      }
+      else if(d7 < robotBully.height) {
+        lineColor.r = 255;
+        lineColor.g = 0;
+        lineColor.b = 0;
+        meter += robotBully.damage;
+      }
+      else {
+        lineColor.r = 255;
+        lineColor.g = 255;
+        lineColor.b = 255;
+      }
+    }  
+    
+    if(isOn) {
+      drawRobotBully();
+      enemyMovement();
+      corruptionMeter(meter, 320, 460);
+      displayCountdown();
+    }
+}
+
+
 function drawRobotBully() {
     push();
     imageMode(CENTER);
@@ -556,8 +733,8 @@ function enemyMovement() {
   
     robotBully.x += robotBully.vx;
     robotBully.y += robotBully.vy;
-    robotBully.x = constrain(robotBully.x, 0, 640);
-    robotBully.y = constrain(robotBully.y, 0, 480);
+    robotBully.x = constrain(robotBully.x, 60, 580);
+    robotBully.y = constrain(robotBully.y, 60, 420);
 }
   
   
@@ -565,6 +742,18 @@ function healthBar(health, x, y) {
     push();
     noStroke();
     fill(0);
+    rectMode(CENTER, CENTER);
+    rect(x, y, 400, 30);
+    fill(255, 0, 0);
+    rect(x, y, health, 30);
+    pop();
+}
+
+
+function corruptionMeter(health, x, y) {
+    push();
+    noStroke();
+    fill(255);
     rectMode(CENTER, CENTER);
     rect(x, y, 400, 30);
     fill(255, 0, 0);
@@ -594,6 +783,13 @@ function checkIfDead() {
 }
 
 
+function checkIfCorrupted() {
+    if(meter >= 400) {
+        state = "robotBeat"
+    }
+}
+
+
 //This function changes the state of the game after its called 
 function endGame() {
     //Ensures that the state only changes in the correct sequence
@@ -606,8 +802,18 @@ function endGame() {
 //This function is called when the mouse is pressed 
 function mousePressed() {
     let insultPicked = random(insultList.jokes); //Randomly picks an insult and assigns to a variable 
+    let d1 = dist(mouseX, mouseY, forgiveButton.x, forgiveButton.y);
+    let d2 = dist(mouseX, mouseY, killButton.x, killButton.y);
+
     computerVoice.speak(insultPicked); //Speaks random insult 
-    speaking = insultPicked; //Displays random insult 
+    speaking = insultPicked; //Displays random insult
+
+    if(d1 < forgiveButton.size / 2 && state === "decision") {
+        state = "running2";
+    }
+    else if(d2 < killButton.size / 2 && state === "decision") {
+        state = "running";
+    }
 }
 
 

@@ -15,6 +15,7 @@ let video;
 let poseNet;
 let pose;
 let skeleton;
+let meter = 0;
 let lineColor = {
   r: 255,
   g: 255, 
@@ -28,8 +29,8 @@ let robotBully = {
   speed: 5,
   vx: 0, 
   vy: 0,
-  jitter: 0.05,
-  health: 400,
+  jitter: 0.1,
+  damage: 0.5,
   img: undefined,
   img2: undefined
 }
@@ -70,21 +71,28 @@ function loading() {
 }
 
 
-function poseNetGame() {
+function draw() {
   translate(width, 0);
   scale(-1, 1);
   image(video, 0, 0, width, height);
 
-  if (pose) {
-    let d1 = dist(pose.leftWrist.x, pose.leftWrist.y, robotBully.x, robotBully.y);
-    let d2 = dist(pose.rightWrist.x, pose.rightWrist.y, robotBully.x, robotBully.y);
+  meter = constrain(meter, 0, 400);
 
-    // for (let i = 0; i < pose.keypoints.length; i++) {
-    //   let x = pose.keypoints[i].position.x;
-    //   let y = pose.keypoints[i].position.y;
-    //   fill(255, 0, 0);
-    //   ellipse(x, y, 16, 16);
-    // }
+  if (pose) {
+    let d1 = dist(pose.leftShoulder.x, pose.leftShoulder.y, robotBully.x, robotBully.y);
+    let d2 = dist(pose.rightShoulder.x, pose.rightShoulder.y, robotBully.x, robotBully.y);
+    let d3 = dist(pose.rightKnee.x, pose.rightKnee.y, robotBully.x, robotBully.y);
+    let d4 = dist(pose.leftKnee.x, pose.leftKnee.y, robotBully.x, robotBully.y);
+    let d5 = dist(pose.nose.x, pose.nose.y, robotBully.x, robotBully.y);
+    let d6 = dist(pose.rightHip.x, pose.rightHip.y, robotBully.x, robotBully.y);
+    let d7 = dist(pose.leftHip.x, pose.leftHip.y, robotBully.x, robotBully.y);
+
+    for (let i = 0; i < pose.keypoints.length; i++) {
+      let x = pose.keypoints[i].position.x;
+      let y = pose.keypoints[i].position.y;
+      fill(255, 0, 0);
+      ellipse(x, y, 16, 16);
+    }
 
     for (let i = 0; i < skeleton.length; i++) {
       let a = skeleton[i][0];
@@ -95,28 +103,58 @@ function poseNetGame() {
     }
 
     if(d1 < robotBully.height) {
-      lineColor.r = 0;
-      lineColor.g = 255;
+      lineColor.r = 255;
+      lineColor.g = 0;
       lineColor.b = 0;
-      damagedRobot();
+      meter += robotBully.damage;
     }
     else if(d2 < robotBully.height) {
-      lineColor.r = 0;
-      lineColor.g = 255;
+      lineColor.r = 255;
+      lineColor.g = 0;
       lineColor.b = 0;
-      damagedRobot();
+      meter += robotBully.damage;
+    }
+    else if(d3 < robotBully.height) {
+      lineColor.r = 255;
+      lineColor.g = 0;
+      lineColor.b = 0;
+      meter += robotBully.damage;
+    }
+    else if(d4 < robotBully.height) {
+      lineColor.r = 255;
+      lineColor.g = 0;
+      lineColor.b = 0;
+      meter += robotBully.damage;
+    }
+    else if(d5 < robotBully.height) {
+      lineColor.r = 255;
+      lineColor.g = 0;
+      lineColor.b = 0;
+      meter += robotBully.damage;
+    }
+    else if(d6 < robotBully.height) {
+      lineColor.r = 255;
+      lineColor.g = 0;
+      lineColor.b = 0;
+      meter += robotBully.damage;
+    }
+    else if(d7 < robotBully.height) {
+      lineColor.r = 255;
+      lineColor.g = 0;
+      lineColor.b = 0;
+      meter += robotBully.damage;
     }
     else {
       lineColor.r = 255;
       lineColor.g = 255;
       lineColor.b = 255;
-      drawRobotBully();
     }
   }  
   
   if(isOn) {
+    drawRobotBully();
     enemyMovement();
-    healthBar(robotBully.health, 320, 460);
+    corruptionMeter(meter, 320, 460);
     displayCountdown();
   }
 }
@@ -130,15 +168,6 @@ function drawRobotBully() {
 }
 
 
-function damagedRobot() {
-  push();
-  imageMode(CENTER);
-  image(robotBully.img2, robotBully.x, robotBully.y, robotBully.width, robotBully.height);
-  pop();
-  robotBully.health += -0.5;
-}
-
-
 function enemyMovement() {
   let r = random(0, 1);
   if(r < robotBully.jitter) {
@@ -148,15 +177,15 @@ function enemyMovement() {
 
   robotBully.x += robotBully.vx;
   robotBully.y += robotBully.vy;
-  robotBully.x = constrain(robotBully.x, 0, 640);
-  robotBully.y = constrain(robotBully.y, 0, 480);
+  robotBully.x = constrain(robotBully.x, 60, 580);
+  robotBully.y = constrain(robotBully.y, 60, 420);
 }
 
 
-function healthBar(health, x, y) {
+function corruptionMeter(health, x, y) {
   push();
   noStroke();
-  fill(0);
+  fill(255);
   rectMode(CENTER, CENTER);
   rect(x, y, 400, 30);
   fill(255, 0, 0);
