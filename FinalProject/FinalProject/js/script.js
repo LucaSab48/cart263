@@ -87,6 +87,8 @@ const commands = [
     }
 ];
 
+let hintAlpha = 0;
+let r;
 let emotion; //This will contain the AI Sentiment model
 let emotionScore = 0; //This will contain the prediction from the AI model
 let robotHealth = 3; //This is the amount of health the robot has
@@ -173,6 +175,8 @@ function setup() {
     video.hide();
     poseNet = ml5.poseNet(video, loading);
     poseNet.on('pose', running);
+
+    r = random(100, 500);
 }
 
 
@@ -185,11 +189,14 @@ function draw() {
         textSize(50);
         text("Loading models", width/2, height/2);
     }
+    else if(state === "title") {
+        
+    }
     else if(state === "robotReady") {
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
-       
+        // hintDisplay("try asking it about itself", 500, 580);
     }
     else if(state === "weak") {
         background(220, 208, 255); //Sets color of the background
@@ -211,6 +218,7 @@ function draw() {
     }
     else if(state === "running2") {
         resizeCanvas(640, 480);
+        background(255);
         poseNetGame2();
         checkIfCorrupted();
     }
@@ -220,6 +228,15 @@ function draw() {
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
         displayDefeatingMessage(); //Displays instructions to beat robot
+    }
+    else if(state === "robotBeat2") {
+
+    }
+    else if(state === "robotWins") {
+
+    }
+    else if(state === "robotWins2") {
+
     }
     else if(state === "robotDefeated") {
         winningDisplayMessage(); //Displays winning message
@@ -235,6 +252,22 @@ function textDisplay() {
     fill(0);
     text(speaking, 500, 550); //Displays the changing variable speaking
 }
+
+
+// function hintDisplay(text, x, y) {
+//     let r = random(100, 500);
+//     textAlign(CENTER);
+//     textSize(30);
+//     fill(0);
+//     text(text, x, y); //Displays the changing variable speaking
+
+//     if(frameCount < r) {
+//         hintAlpha += 1;
+//     }
+//     if(frameCount > 180) {
+//         hintAlpha += -1;
+//     }
+// }
 
 
 //This function displays the positivity meter for the game
@@ -549,12 +582,7 @@ function running(poses) {
 
 
 function loading() {
-    push();
-    textSize(32);
-    textStyle(BOLD);
-    textAlign(CENTER, CENTER);
-    text(`Loading PoseNet`, width / 2, height / 2);
-    pop();
+    console.log(`Loading PoseNet`);
 }
 
 
@@ -624,6 +652,11 @@ function poseNetGame2() {
     image(video, 0, 0, width, height);
   
     meter = constrain(meter, 0, 400);
+
+    
+    if(!starting) {
+        savedTime = millis()
+    }
   
     if (pose) {
       let d1 = dist(pose.leftShoulder.x, pose.leftShoulder.y, robotBully.x, robotBully.y);
@@ -698,12 +731,14 @@ function poseNetGame2() {
       }
     }  
     
-    if(isOn) {
-      drawRobotBully();
-      enemyMovement();
-      corruptionMeter(meter, 320, 460);
-      displayCountdown();
-    }
+    if(isOn && state == "running2") {
+        starting = true;
+        startTime = millis() - savedTime;
+        drawRobotBully();
+        enemyMovement();
+        corruptionMeter(meter, 320, 460);
+        displayCountdown();
+      }
 }
 
 
