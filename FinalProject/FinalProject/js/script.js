@@ -87,6 +87,9 @@ const commands = [
     }
 ];
 
+const pixelDistance = 10;
+let titleImage = undefined;
+let pixels = [];
 let hintAlpha = 0;
 let r;
 let emotion; //This will contain the AI Sentiment model
@@ -144,6 +147,8 @@ let killButton = {
     img: undefined
 };
 
+const density = 'Ñ@#W$9876543210?!abc;:+=-,._ '
+let asciiDiv;
 
 
 
@@ -154,6 +159,7 @@ function preload() {
     robotBully.img2 = loadImage("assets/images/robotBullyDamaged1.png");
     forgiveButton.img = loadImage("assets/images/forgiveSymbol1.png");
     killButton.img = loadImage("assets/images/deathSymbol1.png");
+    titleImage = loadImage("assets/images/TitleCard2.png");
 }
 
 
@@ -177,6 +183,10 @@ function setup() {
     poseNet.on('pose', running);
 
     r = random(100, 500);
+
+    particleDisplay();
+
+    asciiDiv = createDiv();
 }
 
 
@@ -190,7 +200,7 @@ function draw() {
         text("Loading models", width/2, height/2);
     }
     else if(state === "title") {
-        
+        titleDisplay();
     }
     else if(state === "robotReady") {
         background(220, 208, 255); //Sets color of the background
@@ -223,25 +233,54 @@ function draw() {
         checkIfCorrupted();
     }
     else if(state === "robotBeat") {
+
+    }
+    else if(state === "robotBeat2") {
+        //        
         resizeCanvas(1000, 700);
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
         displayDefeatingMessage(); //Displays instructions to beat robot
     }
-    else if(state === "robotBeat2") {
-
-    }
     else if(state === "robotWins") {
-
+        //Comic panel or image of robot in real world
     }
     else if(state === "robotWins2") {
-
+        //Video of user corrupted
+        corruptedEnding();
     }
     else if(state === "robotDefeated") {
         winningDisplayMessage(); //Displays winning message
     }
 
+}
+
+
+function titleDisplay() {
+    computerVoice.stop();
+    background(50);
+    push();
+    textAlign(CENTER);
+    textSize(30);
+    fill(255);
+    text("Press ENTER to start", 500, 600);
+    pop();
+    pixels.forEach( (pixel) => {
+        pixel.update();
+        pixel.display();
+    });
+}
+
+
+function particleDisplay() {
+    for(let i = 0; i < 1000; i += pixelDistance) {
+        for(let j = 0; j < 700; j += pixelDistance) {
+            let titleFill = titleImage.get(i, j);
+            console.log(titleFill);
+            pixels.push(new Particle(i + 5, j + 5, titleFill));
+        }
+    }
 }
 
 
@@ -499,7 +538,6 @@ function originStory() {
 //This function is called when the model of the AI is loaded 
 function modelLoaded() {
     console.log("Model Loaded"); //Logs it onto console
-    state = "robotReady"; //Changes state to start program
 }
 
 
@@ -572,7 +610,7 @@ function buttonSelection() {
 
 
 function running(poses) {
-    console.log(poses);
+    // console.log(poses);
     if(poses.length > 0) {
       pose = poses[0].pose;
       skeleton = poses[0].skeleton;
@@ -583,6 +621,7 @@ function running(poses) {
 
 function loading() {
     console.log(`Loading PoseNet`);
+    state = "title";
 }
 
 
@@ -820,7 +859,7 @@ function checkIfDead() {
 
 function checkIfCorrupted() {
     if(meter >= 400) {
-        state = "robotBeat"
+        state = "robotBeat2"
     }
 }
 
@@ -832,6 +871,33 @@ function endGame() {
         state = "robotDefeated";
     }
 }
+
+
+function corruptedEnding() {
+    // translate(width, 0);
+    // scale(-1, 1);
+    image(video, 0, 0, width, height);
+    video.loadPixels();
+    let asciiImage = "";
+    for (let j = 0; j < height; j++) {
+        for (let i = 0; i < width; i++) {
+            const pixelIndex = (i + j * width) * 4;
+            const r = video.pixels[pixelIndex + 0];
+            const g = video.pixels[pixelIndex + 1];
+            const b = video.pixels[pixelIndex + 2];
+            const avg = (r + g + b) / 3;
+            const len = density.length;
+            const charIndex = floor(map(avg, 0, 255, 0, len));
+            const c = density.charAt(charIndex);
+            if (c == " ") {
+                asciiImage += "&nbsp;";
+            }
+            else {
+                asciiImage += c;
+            }
+        }
+    }
+}   
 
 
 //This function is called when the mouse is pressed 
@@ -859,5 +925,9 @@ function keyPressed() {
         robotHealth = 3; //Resets robot health
         state = "robotReady"; //Changes the state back
     }
+    else if(state === "title" && keyCode === ENTER) {
+        state = "robotWins2"; //Changes the state
+    }
+
 }
 
