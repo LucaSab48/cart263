@@ -107,6 +107,8 @@ let poseNet;
 let pose;
 let skeleton;
 let meter = 0;
+let farEnough = true;
+let backAlpha = 80;
 let lineColor = {
   r: 255,
   g: 255, 
@@ -147,8 +149,11 @@ let killButton = {
     img: undefined
 };
 
-const density = 'Ñ@#W$9876543210?!abc;:+=-,._ '
-let asciiDiv;
+let introImage = undefined;
+let forgiveGoodEndingImage = undefined;
+let killGoodEndingImage = undefined;
+let killBadEndingImage = undefined;
+
 
 
 
@@ -160,6 +165,10 @@ function preload() {
     forgiveButton.img = loadImage("assets/images/forgiveSymbol1.png");
     killButton.img = loadImage("assets/images/deathSymbol1.png");
     titleImage = loadImage("assets/images/TitleCard2.png");
+    introImage = loadImage("assets/images/introCutScene1.png");
+    forgiveGoodEndingImage = loadImage("assets/images/forgiveGoodEnding1.png");
+    killGoodEndingImage = loadImage("assets/images/killGoodEnding1.png");
+    killBadEndingImage = loadImage("assets/images/killBadEnding1.png");
 }
 
 
@@ -185,8 +194,6 @@ function setup() {
     r = random(100, 500);
 
     particleDisplay();
-
-    asciiDiv = createDiv();
 }
 
 
@@ -201,6 +208,9 @@ function draw() {
     }
     else if(state === "title") {
         titleDisplay();
+    }
+    else if(state === "mission") {
+        missionDisplay();
     }
     else if(state === "robotReady") {
         background(220, 208, 255); //Sets color of the background
@@ -225,30 +235,34 @@ function draw() {
         background(255);
         poseNetGame();
         checkIfDead();
+        checkTime();
     }
     else if(state === "running2") {
         resizeCanvas(640, 480);
         background(255);
         poseNetGame2();
         checkIfCorrupted();
+        checkTime();
     }
     else if(state === "robotBeat") {
-
+        resizeCanvas(1000, 700);
+        displayGoodKillEnding();
     }
     else if(state === "robotBeat2") {
         //        
         resizeCanvas(1000, 700);
-        background(220, 208, 255); //Sets color of the background
-        textDisplay(); //Display text function
-        displayRobot(); //Display robot function
-        displayDefeatingMessage(); //Displays instructions to beat robot
+        // background(220, 208, 255); //Sets color of the background
+        // textDisplay(); //Display text function
+        // displayRobot(); //Display robot function
+        // displayDefeatingMessage(); //Displays instructions to beat robot
+        displayGoodForgiveEnding();
     }
     else if(state === "robotWins") {
-        //Comic panel or image of robot in real world
+        resizeCanvas(1000, 700);
+        displayBadKillEnding();
     }
     else if(state === "robotWins2") {
-        //Video of user corrupted
-        corruptedEnding();
+        displayBadForgiveEnding();
     }
     else if(state === "robotDefeated") {
         winningDisplayMessage(); //Displays winning message
@@ -277,10 +291,16 @@ function particleDisplay() {
     for(let i = 0; i < 1000; i += pixelDistance) {
         for(let j = 0; j < 700; j += pixelDistance) {
             let titleFill = titleImage.get(i, j);
-            console.log(titleFill);
             pixels.push(new Particle(i + 5, j + 5, titleFill));
         }
     }
+}
+
+
+function missionDisplay() {
+    push();
+    image(introImage, 0, 0);
+    pop();
 }
 
 
@@ -293,20 +313,19 @@ function textDisplay() {
 }
 
 
-// function hintDisplay(text, x, y) {
-//     let r = random(100, 500);
-//     textAlign(CENTER);
-//     textSize(30);
-//     fill(0);
-//     text(text, x, y); //Displays the changing variable speaking
+function hintDisplay(message, x, y) {
+    textAlign(CENTER);
+    textSize(30);
+    fill(0);
+    text(message, x, y);
 
-//     if(frameCount < r) {
-//         hintAlpha += 1;
-//     }
-//     if(frameCount > 180) {
-//         hintAlpha += -1;
-//     }
-// }
+    if(frameCount < r) {
+        hintAlpha += 1;
+    }
+    if(frameCount > 180) {
+        hintAlpha += -1;
+    }
+}
 
 
 //This function displays the positivity meter for the game
@@ -476,11 +495,6 @@ function handleResult() {
             computerVoice.speak(chosenQuip); //Speaks chosen quip
             speaking = chosenQuip; //Displays chosen quip 
         }
-        //This statement is checking if the user says the key phrase to end the robot
-        else if(spoke === "all is forgiven" && state === "robotBeat") {
-            computerVoice.speak("oh no");
-            setTimeout(endGame, 1000); //Changes the state after 1000ms
-        }
         //This else statement repeats whatever the user says, excluding the conditions above, with a random annoying ending 
         else {
             let chosenEnding = random(insultList.ending); //Assigns random ending to the variable 
@@ -638,13 +652,28 @@ function poseNetGame() {
     if (pose) {
       let d1 = dist(pose.leftWrist.x, pose.leftWrist.y, robotBully.x, robotBully.y);
       let d2 = dist(pose.rightWrist.x, pose.rightWrist.y, robotBully.x, robotBully.y);
-  
-      // for (let i = 0; i < pose.keypoints.length; i++) {
-      //   let x = pose.keypoints[i].position.x;
-      //   let y = pose.keypoints[i].position.y;
-      //   fill(255, 0, 0);
-      //   ellipse(x, y, 16, 16);
-      // }
+      let d3 = dist(pose.rightEye.x, pose.rightEye.y, pose.leftEye.x, pose.leftEye.y);
+
+      if(d3 > 40) {
+        backAlpha = 100;
+        push();
+        noStroke();
+        translate(width, 0);
+        scale(-1, 1);
+        fill(180, backAlpha);
+        rectMode(CENTER, CENTER);
+        rect(320, 240, width, height);
+        fill(0, backAlpha);
+        textAlign(CENTER);
+        textSize(50);
+        text("Back Up", width/2, height/2);
+        pop();
+        farEnough = false;
+      }
+      else {
+        backAlpha = 0
+        farEnough = true
+      }
   
       for (let i = 0; i < skeleton.length; i++) {
         let a = skeleton[i][0];
@@ -654,27 +683,28 @@ function poseNetGame() {
         line(a.position.x, a.position.y, b.position.x, b.position.y);
       }
   
-      if(d1 < robotBully.height) {
+      if(d1 < robotBully.height && farEnough) {
         lineColor.r = 0;
         lineColor.g = 255;
         lineColor.b = 0;
         damagedRobot();
       }
-      else if(d2 < robotBully.height) {
+      else if(d2 < robotBully.height && farEnough) {
         lineColor.r = 0;
         lineColor.g = 255;
         lineColor.b = 0;
         damagedRobot();
       }
-      else {
+      else if(farEnough) {
         lineColor.r = 255;
         lineColor.g = 255;
         lineColor.b = 255;
         drawRobotBully();
       }
+      console.log(d3);
     }  
     
-    if(isOn && state == "running") {
+    if(isOn && state == "running" && farEnough) {
       starting = true;
       startTime = millis() - savedTime;
       enemyMovement();
@@ -705,6 +735,28 @@ function poseNetGame2() {
       let d5 = dist(pose.nose.x, pose.nose.y, robotBully.x, robotBully.y);
       let d6 = dist(pose.rightHip.x, pose.rightHip.y, robotBully.x, robotBully.y);
       let d7 = dist(pose.leftHip.x, pose.leftHip.y, robotBully.x, robotBully.y);
+      let d8 = dist(pose.rightEye.x, pose.rightEye.y, pose.leftEye.x, pose.leftEye.y);
+
+      if(d8 > 40) {
+        backAlpha = 100;
+        push();
+        noStroke();
+        translate(width, 0);
+        scale(-1, 1);
+        fill(180, backAlpha);
+        rectMode(CENTER, CENTER);
+        rect(320, 240, width, height);
+        fill(0, backAlpha);
+        textAlign(CENTER);
+        textSize(50);
+        text("Back Up", width/2, height/2);
+        pop();
+        farEnough = false;
+      }
+      else {
+        backAlpha = 0
+        farEnough = true
+      }
   
     //   for (let i = 0; i < pose.keypoints.length; i++) {
     //     let x = pose.keypoints[i].position.x;
@@ -720,57 +772,59 @@ function poseNetGame2() {
         stroke(lineColor.r, lineColor.g, lineColor.b);
         line(a.position.x, a.position.y, b.position.x, b.position.y);
       }
-  
-      if(d1 < robotBully.height) {
-        lineColor.r = 255;
-        lineColor.g = 0;
-        lineColor.b = 0;
-        meter += robotBully.damage;
-      }
-      else if(d2 < robotBully.height) {
-        lineColor.r = 255;
-        lineColor.g = 0;
-        lineColor.b = 0;
-        meter += robotBully.damage;
-      }
-      else if(d3 < robotBully.height) {
-        lineColor.r = 255;
-        lineColor.g = 0;
-        lineColor.b = 0;
-        meter += robotBully.damage;
-      }
-      else if(d4 < robotBully.height) {
-        lineColor.r = 255;
-        lineColor.g = 0;
-        lineColor.b = 0;
-        meter += robotBully.damage;
-      }
-      else if(d5 < robotBully.height) {
-        lineColor.r = 255;
-        lineColor.g = 0;
-        lineColor.b = 0;
-        meter += robotBully.damage;
-      }
-      else if(d6 < robotBully.height) {
-        lineColor.r = 255;
-        lineColor.g = 0;
-        lineColor.b = 0;
-        meter += robotBully.damage;
-      }
-      else if(d7 < robotBully.height) {
-        lineColor.r = 255;
-        lineColor.g = 0;
-        lineColor.b = 0;
-        meter += robotBully.damage;
-      }
-      else {
-        lineColor.r = 255;
-        lineColor.g = 255;
-        lineColor.b = 255;
-      }
+
+      if(farEnough) {
+        if(d1 < robotBully.height) {
+            lineColor.r = 255;
+            lineColor.g = 0;
+            lineColor.b = 0;
+            meter += robotBully.damage;
+        }
+        else if(d2 < robotBully.height) {
+            lineColor.r = 255;
+            lineColor.g = 0;
+            lineColor.b = 0;
+            meter += robotBully.damage;
+        }
+        else if(d3 < robotBully.height) {
+            lineColor.r = 255;
+            lineColor.g = 0;
+            lineColor.b = 0;
+            meter += robotBully.damage;
+        }
+        else if(d4 < robotBully.height) {
+            lineColor.r = 255;
+            lineColor.g = 0;
+            lineColor.b = 0;
+            meter += robotBully.damage;
+        }
+        else if(d5 < robotBully.height) {
+            lineColor.r = 255;
+            lineColor.g = 0;
+            lineColor.b = 0;
+            meter += robotBully.damage;
+        }
+        else if(d6 < robotBully.height) {
+            lineColor.r = 255;
+            lineColor.g = 0;
+            lineColor.b = 0;
+            meter += robotBully.damage;
+        }
+        else if(d7 < robotBully.height) {
+            lineColor.r = 255;
+            lineColor.g = 0;
+            lineColor.b = 0;
+            meter += robotBully.damage;
+        }
+        else {
+            lineColor.r = 255;
+            lineColor.g = 255;
+            lineColor.b = 255;
+        }
+      } 
     }  
     
-    if(isOn && state == "running2") {
+    if(isOn && state == "running2" && farEnough) {
         starting = true;
         startTime = millis() - savedTime;
         drawRobotBully();
@@ -859,45 +913,72 @@ function checkIfDead() {
 
 function checkIfCorrupted() {
     if(meter >= 400) {
-        state = "robotBeat2"
+        state = "robotWins2"
     }
+}
+
+
+function checkTime() {
+    if(Math.round((countDown - startTime) / 1000) <= 0) {
+        if(state === "running") {
+            state = "robotWins";
+        }
+        else if(state === "running2"){
+            state = "robotBeat2";
+        }
+    }
+}
+
+
+function displayGoodForgiveEnding() {
+    push();
+    image(forgiveGoodEndingImage, 0, 0);
+    pop();
+    computerVoice.speak("thank you");
+    setTimeout(endGame, 5000);
+}
+
+
+function displayGoodKillEnding() {
+    push();
+    image(killGoodEndingImage, 0, 0);
+    pop();
+    computerVoice.speak("you killed me you fool");
+    setTimeout(endGame, 5000);
+}
+
+
+function displayBadForgiveEnding() {
+    translate(width, 0);
+    scale(-1, 1);
+    image(video, 0, 0, width, height);
+
+    robotBully.x = pose.nose.x;
+    robotBully.y = pose.nose.y;
+    drawRobotBully();
+
+    computerVoice.speak("you have now become me");
+    setTimeout(endGame, 5000);
+}
+
+
+function displayBadKillEnding() {
+    push();
+    image(killBadEndingImage, 0, 0);
+    pop();
+    computerVoice.speak("i am finally free, now to bully the rest of the world");
+    setTimeout(endGame, 5000);
 }
 
 
 //This function changes the state of the game after its called 
 function endGame() {
     //Ensures that the state only changes in the correct sequence
-    if(state === "robotBeat") {
+    computerVoice.stop();
+    if(state === "robotBeat" || state === "robotBeat2" || state === "robotWins" || state === "robotWins2") {
         state = "robotDefeated";
     }
 }
-
-
-function corruptedEnding() {
-    // translate(width, 0);
-    // scale(-1, 1);
-    image(video, 0, 0, width, height);
-    video.loadPixels();
-    let asciiImage = "";
-    for (let j = 0; j < height; j++) {
-        for (let i = 0; i < width; i++) {
-            const pixelIndex = (i + j * width) * 4;
-            const r = video.pixels[pixelIndex + 0];
-            const g = video.pixels[pixelIndex + 1];
-            const b = video.pixels[pixelIndex + 2];
-            const avg = (r + g + b) / 3;
-            const len = density.length;
-            const charIndex = floor(map(avg, 0, 255, 0, len));
-            const c = density.charAt(charIndex);
-            if (c == " ") {
-                asciiImage += "&nbsp;";
-            }
-            else {
-                asciiImage += c;
-            }
-        }
-    }
-}   
 
 
 //This function is called when the mouse is pressed 
@@ -926,7 +1007,10 @@ function keyPressed() {
         state = "robotReady"; //Changes the state back
     }
     else if(state === "title" && keyCode === ENTER) {
-        state = "robotWins2"; //Changes the state
+        state = "mission"; //Changes the state
+    }
+    else if(state === "mission" && keyCode === ENTER) {
+        state = "robotReady"; //Changes the state
     }
 
 }
