@@ -74,7 +74,7 @@ const computerVoice = new p5.Speech(); //Contains voice synthesizer
 //This constant contains a variety of commands that will initialize a function called a callback
 const commands = [
     {
-        "command": ["shut up", "shut your mouth", "stop talking", "shush", "shut it"],
+        "command": ["shut up", "shut your mouth", "stop talking", "shush", "shut it", "stop"],
         "callback": shutUpResponse
     },
     {
@@ -82,7 +82,7 @@ const commands = [
         "callback": howResponse
     },
     {
-        "command": ["who are you", "who made you", "what are you", "why are you like this", "what's your story", "why are you so mean", "why do you do this", "then what", "what happened", "then what happened", "what happened after that", "next"],
+        "command": ["who are you", "who made you", "what are you", "why are you like this", "what's your story", "why are you so mean", "why do you do this", "then what", "what happened", "then what happened", "what happened after that", "next", "really", "continue"],
         "callback": originStory
     }
 ];
@@ -90,7 +90,7 @@ const commands = [
 const pixelDistance = 10;
 let titleImage = undefined;
 let pixels = [];
-let hintAlpha = 0;
+let hintAlpha = 255;
 let r;
 let emotion; //This will contain the AI Sentiment model
 let emotionScore = 0; //This will contain the prediction from the AI model
@@ -99,7 +99,7 @@ let robotHealth = 3; //This is the amount of health the robot has
 //User video
 let video;
 let isOn = false;
-let countDown = 60000;
+let countDown = 45000;
 let startTime;
 let starting = false;
 let savedTime;
@@ -150,9 +150,17 @@ let killButton = {
 };
 
 let introImage = undefined;
+let phase1StartTime = 0;
+let vanish1Time = 0;
+let instructionGame1 = undefined;
+let instructionGame2 = undefined;
 let forgiveGoodEndingImage = undefined;
 let killGoodEndingImage = undefined;
 let killBadEndingImage = undefined;
+let startTransition1 = false;
+let transitionAlpha1 = 0;
+let fadeInTransitionAlpha = 255;
+let startFadeOut1 = false;
 
 
 
@@ -169,6 +177,8 @@ function preload() {
     forgiveGoodEndingImage = loadImage("assets/images/forgiveGoodEnding1.png");
     killGoodEndingImage = loadImage("assets/images/killGoodEnding1.png");
     killBadEndingImage = loadImage("assets/images/killBadEnding1.png");
+    instructionGame1 = loadImage("assets/images/killGameInstruction.png");
+    instructionGame2 = loadImage("assets/images/forgiveGameInstruction.png");
 }
 
 
@@ -216,7 +226,7 @@ function draw() {
         background(220, 208, 255); //Sets color of the background
         textDisplay(); //Display text function
         displayRobot(); //Display robot function
-        // hintDisplay("try asking it about itself", 500, 580);
+        callHints(5000, 8000, "try saying 'who are you' or 'really' 3 times", 500, 600);
     }
     else if(state === "weak") {
         background(220, 208, 255); //Sets color of the background
@@ -226,9 +236,15 @@ function draw() {
         robotHealthDisplay(); //Displays robot health
         checkIfDefeated(); //Check if the robot has been defeated
     }
-    else if(state === "decision"){
+    else if(state === "decision") {
         background(220, 208, 255);
         buttonSelection();
+    }
+    else if(state === "killSlide") {
+        killInstruction();
+    }
+    else if(state === "forgiveSlide") {
+        forgiveInstruction();
     }
     else if(state === "running") {
         resizeCanvas(640, 480);
@@ -251,10 +267,6 @@ function draw() {
     else if(state === "robotBeat2") {
         //        
         resizeCanvas(1000, 700);
-        // background(220, 208, 255); //Sets color of the background
-        // textDisplay(); //Display text function
-        // displayRobot(); //Display robot function
-        // displayDefeatingMessage(); //Displays instructions to beat robot
         displayGoodForgiveEnding();
     }
     else if(state === "robotWins") {
@@ -262,9 +274,11 @@ function draw() {
         displayBadKillEnding();
     }
     else if(state === "robotWins2") {
+        resizeCanvas(1000, 700);
         displayBadForgiveEnding();
     }
     else if(state === "robotDefeated") {
+        resizeCanvas(1000, 700);
         winningDisplayMessage(); //Displays winning message
     }
 
@@ -280,10 +294,25 @@ function titleDisplay() {
     fill(255);
     text("Press ENTER to start", 500, 600);
     pop();
+
     pixels.forEach( (pixel) => {
         pixel.update();
         pixel.display();
     });
+
+    push();
+    fill(0, transitionAlpha1);
+    rectMode(CENTER, CENTER);
+    rect(500, 350, width, height);
+    pop();
+
+    if(startTransition1) {
+        transitionAlpha1 += 15
+    }
+
+    if(transitionAlpha1 >= 255) {
+        state = "mission";
+    }
 }
 
 
@@ -298,9 +327,17 @@ function particleDisplay() {
 
 
 function missionDisplay() {
+    computerVoice.stop();
     push();
     image(introImage, 0, 0);
+    rectMode(CENTER, CENTER);
+    fill(0, fadeInTransitionAlpha);
+    rect(500, 350, width, height);
     pop();
+    
+    if(fadeInTransitionAlpha >= 0) {
+        fadeInTransitionAlpha += -15;
+    }
 }
 
 
@@ -313,18 +350,22 @@ function textDisplay() {
 }
 
 
+function callHints(time1, time2, message, x, y) {
+    setTimeout(hintDisplay(message, x, y), time1);
+    setTimeout(hintVanish, time2);
+}
+
+
 function hintDisplay(message, x, y) {
     textAlign(CENTER);
     textSize(30);
-    fill(0);
+    fill(0, hintAlpha);
     text(message, x, y);
+}
 
-    if(frameCount < r) {
-        hintAlpha += 1;
-    }
-    if(frameCount > 180) {
-        hintAlpha += -1;
-    }
+
+function hintVanish() {
+    hintAlpha = 0;
 }
 
 
@@ -354,23 +395,38 @@ function robotHealthDisplay() {
 }
 
 
-//This function displays the instructions to beat the robot after hurting him with positive words
-function displayDefeatingMessage() {
+function forgiveInstruction() {
+    computerVoice.stop();
+    push();
+    image(instructionGame2, 0, 0);
     textAlign(CENTER);
-    textSize(30);
+    textSize(35);
     fill(0);
-    text("Forgive the robot to defeat him", 500, 600);
-    text("Say: all is forgiven", 500, 650)
+    text("Press ENTER when ready", 500, 650)
+    pop();
+}
+
+
+function killInstruction() {
+    computerVoice.stop();
+    push();
+    image(instructionGame1, 0, 0);
+    textAlign(CENTER);
+    textSize(35);
+    fill(0);
+    text("Press ENTER when ready", 500, 650)
+    pop();
 }
 
 
 //This function displays the winning message after defeating the robot
 function winningDisplayMessage() {
     background(0);
+    noStroke();
     fill(255);
     textAlign(CENTER);
     textSize(50);
-    text("You defeated the computer bully!", width/2, height/2);
+    text("Thank you for playing", width/2, height/2);
     textSize(30);
     text("Press ENTER to restart", width/2, 450);
     computerVoice.stop(); //This stops the computer bully from talking
@@ -559,8 +615,13 @@ function modelLoaded() {
 function checkIfDefeated() {
     //Changes the state if the robots health has reached 0
     if(robotHealth === 0 && state === "weak") {
-        state = "decision";
+        setTimeout(switchState1, 2000);
     }
+}
+
+
+function switchState1() {
+    state = "decision";
 }
 
 
@@ -991,10 +1052,10 @@ function mousePressed() {
     speaking = insultPicked; //Displays random insult
 
     if(d1 < forgiveButton.size / 2 && state === "decision") {
-        state = "running2";
+        state = "forgiveSlide";
     }
     else if(d2 < killButton.size / 2 && state === "decision") {
-        state = "running";
+        state = "killSlide";
     }
 }
 
@@ -1004,14 +1065,21 @@ function keyPressed() {
     //This if statement checks that it's in the correct state and pressing the right key
     if(state === "robotDefeated" && keyCode === ENTER) {
         robotHealth = 3; //Resets robot health
-        state = "robotReady"; //Changes the state back
+        state = "title"; //Changes the state back
     }
     else if(state === "title" && keyCode === ENTER) {
-        state = "mission"; //Changes the state
+        startTransition1 = true;
     }
     else if(state === "mission" && keyCode === ENTER) {
         state = "robotReady"; //Changes the state
     }
+    else if(state === "forgiveSlide" && keyCode === ENTER) {
+        state = "running2";
+    }
+    else if(state === "killSlide" && keyCode === ENTER) {
+        state = "running";
+    }
+
 
 }
 
