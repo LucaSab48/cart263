@@ -129,7 +129,7 @@ let robotBully = {
   damage: 0.5, //Used for the damage amount in the kill game
   img: undefined,
   img2: undefined
-}
+};
 
 //Object of the button to start the forgive game
 let forgiveButton = {
@@ -293,6 +293,15 @@ function draw() {
         resizeCanvas(1000, 700);
         winningDisplayMessage(); //Displays winning message
     }
+    //Lets a small transition happen to have an ending effect (turn screen to white)
+    else if(state === "Endend") {
+        background(255);
+        push();
+        rectMode(CENTER, CENTER);
+        fill(255);
+        rect(0, 0, width, height);
+        pop();
+    }
 
 }
 
@@ -322,7 +331,7 @@ function titleDisplay() {
 
     //This if statement starts the fade in transition
     if(startTransition1) {
-        transitionAlpha1 += 15 //Slow fade
+        transitionAlpha1 += 15; //Slow fade
     }
 
     //Changes the state of the game after the fade is complete
@@ -723,7 +732,7 @@ function poseNetGame() {
 
     //Saves the time in the savedTime variable as soon as the game starts 
     if(!starting) {
-        savedTime = millis()
+        savedTime = millis();
     }
     
     //Ensures to only start if statement when poses are detected
@@ -751,8 +760,8 @@ function poseNetGame() {
       }
       //Changes opacity to 0 when user is far enough
       else {
-        backAlpha = 0
-        farEnough = true
+        backAlpha = 0;
+        farEnough = true;
       }
       
       //This for loop connects all the necessary lines to draw the skeleton 
@@ -808,7 +817,7 @@ function poseNetGame2() {
 
     //Same thing as before for the countdown
     if(!starting) {
-        savedTime = millis()
+        savedTime = millis();
     }
     
     //Only starts when detecting users body 
@@ -840,8 +849,8 @@ function poseNetGame2() {
         farEnough = false;
       }
       else {
-        backAlpha = 0
-        farEnough = true
+        backAlpha = 0;
+        farEnough = true;
       }
   
       //Same thing as before for skeleton display
@@ -1002,7 +1011,7 @@ function displayCountdown() {
 function checkIfDead() {
     //Checks the health remaining of the robot and if 0 then switches to the good ending 
     if(robotBully.health <= 0) {
-        state = "robotBeat"
+        state = "robotBeat";
     }
 }
 
@@ -1011,7 +1020,7 @@ function checkIfDead() {
 function checkIfCorrupted() {
     //When users meter reaches 400 it switches the state
     if(meter >= 400) {
-        state = "robotWins2"
+        state = "robotWins2";
     }
 }
 
@@ -1114,12 +1123,7 @@ function mousePressed() {
 function keyPressed() {
     //This if statement checks that it's in the correct state and pressing the right key
     if(state === "robotDefeated" && keyCode === ENTER) {
-        background(255);
-        push();
-        rectMode(CENTER, CENTER);
-        fill(255);
-        rect(0, 0, width, height);
-        pop();
+        state = "Endend"; //Switches state to the end end
     }
     //Starts the fade out transition when the user clicks enter during the title screen
     else if(state === "title" && keyCode === ENTER) {
