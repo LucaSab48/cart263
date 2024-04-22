@@ -293,16 +293,6 @@ function draw() {
         resizeCanvas(1000, 700);
         winningDisplayMessage(); //Displays winning message
     }
-    //Lets a small transition happen to have an ending effect (turn screen to white)
-    else if(state === "Endend") {
-        background(255);
-        push();
-        rectMode(CENTER, CENTER);
-        fill(255);
-        rect(0, 0, width, height);
-        pop();
-    }
-
 }
 
 
@@ -1123,7 +1113,7 @@ function mousePressed() {
 function keyPressed() {
     //This if statement checks that it's in the correct state and pressing the right key
     if(state === "robotDefeated" && keyCode === ENTER) {
-        state = "Endend"; //Switches state to the end end
+        return;
     }
     //Starts the fade out transition when the user clicks enter during the title screen
     else if(state === "title" && keyCode === ENTER) {
